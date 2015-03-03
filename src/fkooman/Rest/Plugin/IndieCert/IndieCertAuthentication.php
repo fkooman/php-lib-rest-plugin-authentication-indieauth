@@ -95,18 +95,18 @@ class IndieCertAuthentication implements ServicePluginInterface
                 $redirectUri = $request->getAppRoot() . 'indiecert/callback';
 
                 if (null === $this->redirectTo) {
-                    $redirectTo = $request->getHeader('HTTP_REFERER');
+                    $this->redirectTo = $request->getHeader('HTTP_REFERER');
                 }
 
-                if (0 === strpos($redirectTo, '/')) {
+                if (0 === strpos($this->redirectTo, '/')) {
                     // assume URI relative to appRoot
-                    $redirectTo = $request->getAppRoot() . substr($redirectTo, 1);
+                    $this->redirectTo = $request->getAppRoot() . substr($this->redirectTo, 1);
                 }
 
                 $stateValue = $this->io->getRandomHex();
                 $this->session->setValue('state', $stateValue);
                 $this->session->setValue('redirect_uri', $redirectUri);
-                $this->session->setValue('redirect_to', $redirectTo);
+                $this->session->setValue('redirect_to', $this->redirectTo);
 
                 $fullAuthUri = sprintf('%s?me=%s&redirect_uri=%s&state=%s', $this->authUri, $me, $redirectUri, $stateValue);
 
