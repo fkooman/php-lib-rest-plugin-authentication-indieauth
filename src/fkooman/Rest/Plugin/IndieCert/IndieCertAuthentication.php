@@ -50,7 +50,7 @@ class IndieCertAuthentication implements ServicePluginInterface
             '/indiecert/auth',
             function (Request $request) use ($session, $io, $authUri, $redirectTo) {
                 $me = $request->getPostParameter('me');
-                $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert/callback';
+                $redirectUri = $request->getAppRoot() . 'indiecert/callback';
 
                 if (null === $redirectTo) {
                     $redirectTo = $request->getHeader('HTTP_REFERER');
@@ -58,7 +58,7 @@ class IndieCertAuthentication implements ServicePluginInterface
 
                 if (0 === strpos($redirectTo, '/')) {
                     // assume URI relative to appRoot
-                    $redirectTo = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . substr($redirectTo, 1);
+                    $redirectTo = $request->getAppRoot() . substr($redirectTo, 1);
                 }
 
                 $stateValue = $io->getRandomHex();

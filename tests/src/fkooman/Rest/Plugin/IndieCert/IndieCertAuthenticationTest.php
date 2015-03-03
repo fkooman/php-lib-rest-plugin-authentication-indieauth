@@ -67,7 +67,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
     public function testIndieCertAuthRequest()
     {
         $request = new Request('http://www.example.org/indiecert/auth', 'POST');
-        $request->setAppRoot('/');
+        $request->setBaseDir('/');
         $request->setPathInfo('/indiecert/auth');
         $request->setHeader('HTTP_REFERER', 'http://www.example.org/');
         $request->setPostParameters(
@@ -102,7 +102,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
     public function testIndieCertCallbackNoSessionState()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321', 'GET');
-        $request->setAppRoot('/');
+        $request->setBaseDir('/');
         $request->setPathInfo('/indiecert/callback');
 
         $service = new Service();
@@ -120,7 +120,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
     public function testIndieCertCallbackNonMatchingState()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
-        $request->setAppRoot('/');
+        $request->setBaseDir('/');
         $request->setPathInfo('/indiecert/callback');
 
         $service = new Service();
@@ -139,7 +139,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
     public function testIndieCertCallback()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
-        $request->setAppRoot('/');
+        $request->setBaseDir('/');
         $request->setPathInfo('/indiecert/callback');
 
         $service = new Service();
