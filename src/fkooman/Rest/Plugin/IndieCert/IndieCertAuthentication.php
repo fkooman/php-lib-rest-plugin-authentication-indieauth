@@ -56,7 +56,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                     $redirectTo = $request->getHeader('HTTP_REFERER');
                 }
 
-                if (0 !== strpos($redirectTo, '/')) {
+                if (0 === strpos($redirectTo, '/')) {
                     // assume URI relative to appRoot
                     $redirectTo = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . substr($redirectTo, 1);
                 }
