@@ -59,9 +59,6 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('getValue')->willReturn(
-            null
-        );
 
         $indieCertAuth = new IndieCertAuthentication($service, null, null, null, $sessionStub);
         $indieCertAuth->execute($request);
@@ -92,9 +89,6 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('setValue')->willReturn(
-            null
-        );
 
         $indieCertAuth = new IndieCertAuthentication($service, null, 'https://indiecert.net/auth', null, $sessionStub, null, $ioStub);
         $response = $service->run($request);
@@ -116,7 +110,6 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('getValue')->willReturn(null);
 
         $indieCertAuth = new IndieCertAuthentication($service, null, null, null, $sessionStub);
         $response = $service->run($request);
@@ -155,7 +148,6 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->disableOriginalConstructor()
                      ->getMock();
         $sessionStub->method('getValue')->will($this->onConsecutiveCalls('12345abcdef', 'http://www.example.org/indiecert/callback', 'http://www.example.org/'));
-        $sessionStub->method('setValue')->willReturn(null);
 
         $client = new Client();
         $mock = new Mock(
