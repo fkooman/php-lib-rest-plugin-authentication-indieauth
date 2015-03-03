@@ -48,7 +48,7 @@ class IndieCertAuthentication implements ServicePluginInterface
             '/indiecert/auth',
             function (Request $request) use ($session, $authUri) {
                 $me = $request->getPostParameter('me');
-                $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'auth.php/indiecert/callback';
+                $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert/callback';
                 $stateValue = '12345';
                 $session->setValue('state', $stateValue);
                 $session->setValue('redirect_uri', $redirectUri);
@@ -63,7 +63,11 @@ class IndieCertAuthentication implements ServicePluginInterface
         $service->get(
             '/indiecert/callback',
             function (Request $request) use ($session, $client, $verifyUri) {
-                if ($session->getValue('state') !== $request->getQueryParameter('state')) {
+                $sessionState = $session->getValue('state');
+                if (null === $sessionState) {
+                    throw new BadRequestException('no session state available');
+                }
+                if ($sessionState !== $request->getQueryParameter('state')) {
                     throw new BadRequestException('non matching state');
                 }
                 $code = $request->getQueryParameter('code');
@@ -80,8 +84,8 @@ class IndieCertAuthentication implements ServicePluginInterface
                 $verifyResponse = $client->send($verifyRequest)->json();
                 $session->setValue('me', $verifyResponse['me']);
 
-                // FIXME: redirect to a page where you need to be authenticated...
-                return new RedirectResponse($request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'auth.php/authenticated');
+                // FIXME: redirect to a page where you need to be authenticated, caller should tell us!
+                return new RedirectResponse($request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'authenticated');
             },
             array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
         );

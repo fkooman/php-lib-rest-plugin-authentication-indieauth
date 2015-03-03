@@ -27,48 +27,35 @@ use fkooman\Http\Session;
 use GuzzleHttp\Client;
 use fkooman\Http\Request;
 
-try {
-    $service = new Service();
+$service = new Service();
 
-    $session = new Session('IndieCert');
-    $client = new Client();
+$session = new Session('IndieCert');
+$client = new Client();
 
-    $service->registerBeforeEachMatchPlugin(
-        new IndieCertAuthentication(
-            $service
-        )
-    );
-    
-    $service->setDefaultRoute('/welcome');
+$service->registerOnMatchPlugin(
+    new IndieCertAuthentication(
+        $service
+    )
+);
 
-    $service->get(
-        '/welcome',
-        function (Request $request) {
-            // show sign in form, post to 'indiecert/auth' endpoint as registered by plugin
-            return '
+$service->get(
+    '/',
+    function (Request $request) {
+        // show sign in form, post to 'indiecert/auth' endpoint as registered by plugin
+        return '
 <html><head></head><body><h1>Sign In</h1><form method="post" action="indiecert/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>
-            ';
-        },
-        // no authentication needed on welcome page...
-        array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
-    );
+        ';
+    },
+    // no authentication needed on welcome page...
+    array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
+);
 
-    $service->get(
-        '/authenticated',
-        function (UserInfo $u) {
-            // here we do need to be authenticated...
-            return sprintf('Hello %s', $u->getUserId());
-        }
-    );
-
-    $service->run()->sendResponse();
-} catch (Exception $e) {
-    if ($e instanceof HttpException) {
-        $response = $e->getHtmlResponse();
-    } else {
-        // we catch all other (unexpected) exceptions and return a 500
-        $e = new InternalServerErrorException($e->getMessage());
-        $response = $e->getHtmlResponse();
+$service->get(
+    '/authenticated',
+    function (UserInfo $u) {
+        // here we do need to be authenticated...
+        return sprintf('Hello %s', $u->getUserId());
     }
-    $response->sendResponse();
-}
+);
+
+$service->run()->sendResponse();
