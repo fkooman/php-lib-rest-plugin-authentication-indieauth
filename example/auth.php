@@ -24,10 +24,8 @@ use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
 
 $service = new Service();
-
 $service->registerOnMatchPlugin(
     new IndieCertAuthentication(
-        $service,
         '/welcome'
     )
 );

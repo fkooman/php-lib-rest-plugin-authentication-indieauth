@@ -30,29 +30,71 @@ use GuzzleHttp\Client;
 
 class IndieCertAuthentication implements ServicePluginInterface
 {
+    /** @var string */
+    private $redirectTo;
+
+    /** @var string */
+    private $authUri;
+
+    /** @var string */
+    private $verifyUri;
+
     /** @var fkooman\Http\Session */
     private $session;
-    
-    public function __construct(Service $service, $redirectTo = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', Session $session = null, Client $client = null, IO $io = null)
+
+    /** @var GuzzleHttp\Client */
+    private $client;
+
+    /** @var fkooman\Rest\Plugin\IndieCert\IO */
+    private $io;
+
+    public function __construct($redirectTo = null, $authUri = null, $verifyUri = null)
     {
-        if (null === $session) {
-            $session = new Session('IndieCert');
+        $this->redirectTo = $redirectTo;
+        if (null === $authUri) {
+            $authUri = 'https://indiecert.net/auth';
         }
+        $this->authUri = $authUri;
+        if (null === $verifyUri) {
+            $verifyUri = 'https://indiecert.net/verify';
+        }
+        $this->verifyUri = $verifyUri;
+    }
+
+    public function setSession(Session $session)
+    {
         $this->session = $session;
-        if (null === $client) {
-            $client = new Client();
+    }
+
+    public function setClient(Client $client)
+    {
+        $this->client = $client;
+    }
+
+    public function setIO(IO $io)
+    {
+        $this->io = $io;
+    }
+
+    public function init(Service $service)
+    {
+        if (null === $this->session) {
+            $this->session = new Session('IndieCert');
         }
-        if (null === $io) {
-            $io = new IO();
+        if (null === $this->client) {
+            $this->client = new Client();
+        }
+        if (null === $this->io) {
+            $this->io = new IO();
         }
 
         $service->post(
             '/indiecert/auth',
-            function (Request $request) use ($session, $io, $authUri, $redirectTo) {
+            function (Request $request) {
                 $me = $request->getPostParameter('me');
                 $redirectUri = $request->getAppRoot() . 'indiecert/callback';
 
-                if (null === $redirectTo) {
+                if (null === $this->redirectTo) {
                     $redirectTo = $request->getHeader('HTTP_REFERER');
                 }
 
@@ -61,12 +103,12 @@ class IndieCertAuthentication implements ServicePluginInterface
                     $redirectTo = $request->getAppRoot() . substr($redirectTo, 1);
                 }
 
-                $stateValue = $io->getRandomHex();
-                $session->setValue('state', $stateValue);
-                $session->setValue('redirect_uri', $redirectUri);
-                $session->setValue('redirect_to', $redirectTo);
+                $stateValue = $this->io->getRandomHex();
+                $this->session->setValue('state', $stateValue);
+                $this->session->setValue('redirect_uri', $redirectUri);
+                $this->session->setValue('redirect_to', $redirectTo);
 
-                $fullAuthUri = sprintf('%s?me=%s&redirect_uri=%s&state=%s', $authUri, $me, $redirectUri, $stateValue);
+                $fullAuthUri = sprintf('%s?me=%s&redirect_uri=%s&state=%s', $this->authUri, $me, $redirectUri, $stateValue);
 
                 return new RedirectResponse($fullAuthUri, 302);
             },
@@ -75,28 +117,28 @@ class IndieCertAuthentication implements ServicePluginInterface
 
         $service->get(
             '/indiecert/callback',
-            function (Request $request) use ($session, $client, $verifyUri) {
-                $sessionState = $session->getValue('state');
+            function (Request $request) {
+                $sessionState = $this->session->getValue('state');
                 if (null === $sessionState) {
                     throw new BadRequestException('no session state available');
                 }
                 if ($sessionState !== $request->getQueryParameter('state')) {
                     throw new BadRequestException('non matching state');
                 }
-                $verifyRequest = $client->createRequest(
+                $verifyRequest = $this->client->createRequest(
                     'POST',
-                    $verifyUri,
+                    $this->verifyUri,
                     array(
                         'body' => array(
                             'code' => $request->getQueryParameter('code'),
-                            'redirect_uri' => $session->getValue('redirect_uri')
+                            'redirect_uri' => $this->session->getValue('redirect_uri')
                         )
                     )
                 );
-                $verifyResponse = $client->send($verifyRequest)->json();
-                $session->setValue('me', $verifyResponse['me']);
+                $verifyResponse = $this->client->send($verifyRequest)->json();
+                $this->session->setValue('me', $verifyResponse['me']);
 
-                $redirectTo = $session->getValue('redirect_to');
+                $redirectTo = $this->session->getValue('redirect_to');
 
                 return new RedirectResponse($redirectTo, 302);
             },
