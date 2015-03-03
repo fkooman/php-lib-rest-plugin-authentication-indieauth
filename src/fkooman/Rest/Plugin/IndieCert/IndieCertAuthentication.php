@@ -33,7 +33,7 @@ class IndieCertAuthentication implements ServicePluginInterface
     /** @var fkooman\Http\Session */
     private $session;
 
-    public function __construct(Service $service, Session $session = null, Client $client = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify')
+    public function __construct(Service $service, Session $session = null, Client $client = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', $redirectTo = null)
     {
         if (null === $session) {
             $session = new Session('IndieCert');
@@ -46,12 +46,20 @@ class IndieCertAuthentication implements ServicePluginInterface
 
         $service->post(
             '/indiecert/auth',
-            function (Request $request) use ($session, $authUri) {
+            function (Request $request) use ($session, $authUri, $redirectTo) {
                 $me = $request->getPostParameter('me');
                 $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert/callback';
+
+                // determine where to redirect back to, by default the page that requests this
+                // action
+                if (null === $redirectTo) {
+                    $redirectTo = $request->getHeader('HTTP_REFERER');
+                }
+
                 $stateValue = '12345';
                 $session->setValue('state', $stateValue);
                 $session->setValue('redirect_uri', $redirectUri);
+                $session->setValue('redirect_to', $redirectTo);
 
                 $fullAuthUri = sprintf('%s?me=%s&redirect_uri=%s&state=%s', $authUri, $me, $redirectUri, $stateValue);
 
@@ -70,7 +78,6 @@ class IndieCertAuthentication implements ServicePluginInterface
                 if ($sessionState !== $request->getQueryParameter('state')) {
                     throw new BadRequestException('non matching state');
                 }
-                $code = $request->getQueryParameter('code');
                 $verifyRequest = $client->createRequest(
                     'POST',
                     $verifyUri,
@@ -84,8 +91,9 @@ class IndieCertAuthentication implements ServicePluginInterface
                 $verifyResponse = $client->send($verifyRequest)->json();
                 $session->setValue('me', $verifyResponse['me']);
 
-                // FIXME: redirect to a page where you need to be authenticated, caller should tell us!
-                return new RedirectResponse($request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'authenticated');
+                $redirectTo = $session->getValue('redirect_to');
+
+                return new RedirectResponse($redirectTo, 302);
             },
             array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
         );
