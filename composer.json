@@ -1,0 +1,22 @@
+{
+    "authors": [
+        {
+            "email": "fkooman@tuxed.net",
+            "name": "Fran\u00e7ois Kooman",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "fkooman\\Rest\\Plugin\\IndieCert": "src/"
+        }
+    },
+    "description": "IndieCert Authentication plugin for fkooman/rest",
+    "license": "Apache-2.0",
+    "name": "fkooman/rest-plugin-indiecert",
+    "require": {
+        "fkooman/rest": "dev-master",
+        "guzzlehttp/guzzle": "~4.0",
+        "php": ">=5.3.3"
+    }
+}
