@@ -25,6 +25,7 @@ use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
 use fkooman\Http\Session;
 use GuzzleHttp\Client;
+use fkooman\Http\Request;
 
 try {
     $service = new Service();
@@ -49,7 +50,7 @@ try {
             ';
         },
         // no authentication needed on welcome page...
-        array('fkooman\Rest\Plugin\IndieCertAuthentication')
+        array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
     );
 
     $service->get(

@@ -15,7 +15,7 @@
     "license": "Apache-2.0",
     "name": "fkooman/rest-plugin-indiecert",
     "require": {
-        "fkooman/rest": "dev-master",
+        "fkooman/rest": "~0.6.8",
         "guzzlehttp/guzzle": "~4.0",
         "php": ">=5.3.3"
     }

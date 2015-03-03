@@ -20,6 +20,7 @@ namespace fkooman\Rest\Plugin\IndieCert;
 
 use fkooman\Http\Session;
 use fkooman\Http\Request;
+use fkooman\Rest\Service;
 use fkooman\Http\RedirectResponse;
 use fkooman\Http\Exception\BadRequestException;
 use fkooman\Http\Exception\UnauthorizedException;
@@ -44,10 +45,10 @@ class IndieCertAuthentication implements ServicePluginInterface
         }
 
         $service->post(
-            'indiecert/auth',
+            '/indiecert/auth',
             function (Request $request) use ($session, $authUri) {
                 $me = $request->getPostParameter('me');
-                $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert_callback';
+                $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'auth.php/indiecert/callback';
                 $stateValue = '12345';
                 $session->setValue('state', $stateValue);
                 $session->setValue('redirect_uri', $redirectUri);
@@ -56,13 +57,13 @@ class IndieCertAuthentication implements ServicePluginInterface
 
                 return new RedirectResponse($fullAuthUri, 302);
             },
-            array('fkooman\Rest\Plugin\IndieCertAuthentication')
+            array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
         );
 
         $service->get(
-            'indiecert/callback',
+            '/indiecert/callback',
             function (Request $request) use ($session, $client, $verifyUri) {
-                if ($session->getKey('state') !== $request->getQueryParameter('state')) {
+                if ($session->getValue('state') !== $request->getQueryParameter('state')) {
                     throw new BadRequestException('non matching state');
                 }
                 $code = $request->getQueryParameter('code');
@@ -72,23 +73,23 @@ class IndieCertAuthentication implements ServicePluginInterface
                     array(
                         'body' => array(
                             'code' => $request->getQueryParameter('code'),
-                            'redirect_uri' => $session->getKey('redirect_uri')
+                            'redirect_uri' => $session->getValue('redirect_uri')
                         )
                     )
                 );
                 $verifyResponse = $client->send($verifyRequest)->json();
-                $session->setKey('me', $verifyResponse['me']);
+                $session->setValue('me', $verifyResponse['me']);
 
                 // FIXME: redirect to a page where you need to be authenticated...
-                return new RedirectResponse($request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'authenticated');
+                return new RedirectResponse($request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'auth.php/authenticated');
             },
-            array('fkooman\Rest\Plugin\IndieCertAuthentication')
+            array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
         );
     }
 
     public function execute(Request $request)
     {
-        $userId = $this->session->getKey('me');
+        $userId = $this->session->getValue('me');
         if (null === $userId) {
             throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieCert');
         }
