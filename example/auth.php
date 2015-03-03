@@ -22,7 +22,6 @@ use fkooman\Rest\Service;
 use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
-use fkooman\Http\Request;
 use fkooman\Http\IncomingRequest;
 
 $service = new Service();
@@ -56,4 +55,4 @@ $service->get(
     }
 );
 
-$service->run($request  )->sendResponse();
+$service->run($request)->sendResponse();
