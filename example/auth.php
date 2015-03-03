@@ -18,23 +18,21 @@
 
 require_once dirname(__DIR__).'/vendor/autoload.php';
 
-use fkooman\Http\Exception\HttpException;
-use fkooman\Http\Exception\InternalServerErrorException;
 use fkooman\Rest\Service;
+use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
-use fkooman\Http\Session;
-use GuzzleHttp\Client;
 use fkooman\Http\Request;
+use fkooman\Http\IncomingRequest;
 
 $service = new Service();
 
-$session = new Session('IndieCert');
-$client = new Client();
-
+$request = Request::fromIncomingRequest(new IncomingRequest());
+$redirectTo = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'authenticated';
 $service->registerOnMatchPlugin(
     new IndieCertAuthentication(
-        $service
+        $service,
+        $redirectTo
     )
 );
 
@@ -58,4 +56,4 @@ $service->get(
     }
 );
 
-$service->run()->sendResponse();
+$service->run($request  )->sendResponse();

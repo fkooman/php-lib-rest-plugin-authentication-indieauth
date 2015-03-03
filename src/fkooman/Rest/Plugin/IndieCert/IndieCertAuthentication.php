@@ -32,23 +32,18 @@ class IndieCertAuthentication implements ServicePluginInterface
 {
     /** @var fkooman\Http\Session */
     private $session;
-
-    /** @var fkooman\Rest\Plugin\IndieCert\IO */
-    private $io;
-
-    public function __construct(Service $service, Session $session = null, Client $client = null, IO $io = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', $redirectTo = null)
+    
+    public function __construct(Service $service, $redirectTo = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', Session $session = null, Client $client = null, IO $io = null)
     {
         if (null === $session) {
             $session = new Session('IndieCert');
         }
         $this->session = $session;
-
-        if (null === $io) {
-            $io = new IO();
-        }
-
         if (null === $client) {
             $client = new Client();
+        }
+        if (null === $io) {
+            $io = new IO();
         }
 
         $service->post(
@@ -57,7 +52,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                 $me = $request->getPostParameter('me');
                 $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert/callback';
 
-                // determine where to redirect back to, by default the page that requests this
+                // determine where to redirect back to, by default the page that requests the authentication
                 // action
                 if (null === $redirectTo) {
                     $redirectTo = $request->getHeader('HTTP_REFERER');
