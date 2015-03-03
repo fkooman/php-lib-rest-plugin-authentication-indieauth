@@ -20,6 +20,7 @@ namespace fkooman\Rest;
 
 use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
+use fkooman\Rest\Plugin\IndieCert\IO;
 use fkooman\Rest\Service;
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
@@ -80,25 +81,71 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
                       
         $service = new Service();
 
-        $stub = $this->getMockBuilder('fkooman\Http\Session')
+        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\IndieCert\IO')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $stub->method('setValue')->willReturn(
+        $ioStub->method('getRandomHex')->willReturn(
+            '12345abcdef'
+        );
+
+
+        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
+                     ->disableOriginalConstructor()
+                     ->getMock();
+        $sessionStub->method('setValue')->willReturn(
             null
         );
 
-        $indieCertAuth = new IndieCertAuthentication($service, $stub);
+        $indieCertAuth = new IndieCertAuthentication($service, $sessionStub, null, $ioStub);
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals(
-            'https://indiecert.net/auth?me=mydomain.org&redirect_uri=http://www.example.org/indiecert/callback&state=12345',
+            'https://indiecert.net/auth?me=mydomain.org&redirect_uri=http://www.example.org/indiecert/callback&state=12345abcdef',
             $response->getHeader('Location')
         );
     }
 
+    public function testIndieCertCallbackNoSessionState()
+    {
+        $request = new Request('http://www.example.org/indiecert/callback?code=54321', 'GET');
+        $request->setAppRoot('/');
+        $request->setPathInfo('/indiecert/callback');
+
+        $service = new Service();
+
+        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
+                     ->disableOriginalConstructor()
+                     ->getMock();
+        $sessionStub->method('getValue')->willReturn(null);
+
+        $indieCertAuth = new IndieCertAuthentication($service, $sessionStub);
+        $response = $service->run($request);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals(array('error' => 'no session state available'), $response->getContent());
+    }
+
+    public function testIndieCertCallbackNonMatchingState()
+    {
+        $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
+        $request->setAppRoot('/');
+        $request->setPathInfo('/indiecert/callback');
+
+        $service = new Service();
+
+        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
+                     ->disableOriginalConstructor()
+                     ->getMock();
+        $sessionStub->method('getValue')->willReturn('54321abcdef');
+
+        $indieCertAuth = new IndieCertAuthentication($service, $sessionStub);
+        $response = $service->run($request);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals(array('error' => 'non matching state'), $response->getContent());
+    }
+
     public function testIndieCertCallback()
     {
-        $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345', 'GET');
+        $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
         $request->setAppRoot('/');
         $request->setPathInfo('/indiecert/callback');
 
@@ -107,7 +154,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $stub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $stub->method('getValue')->will($this->onConsecutiveCalls('12345', 'http://www.example.org/indiecert/callback', 'http://www.example.org/'));
+        $stub->method('getValue')->will($this->onConsecutiveCalls('12345abcdef', 'http://www.example.org/indiecert/callback', 'http://www.example.org/'));
         $stub->method('setValue')->willReturn(null);
 
         $client = new Client();

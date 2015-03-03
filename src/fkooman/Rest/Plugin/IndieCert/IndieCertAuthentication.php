@@ -33,12 +33,19 @@ class IndieCertAuthentication implements ServicePluginInterface
     /** @var fkooman\Http\Session */
     private $session;
 
-    public function __construct(Service $service, Session $session = null, Client $client = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', $redirectTo = null)
+    /** @var fkooman\Rest\Plugin\IndieCert\IO */
+    private $io;
+
+    public function __construct(Service $service, Session $session = null, Client $client = null, IO $io = null, $authUri = 'https://indiecert.net/auth', $verifyUri = 'https://indiecert.net/verify', $redirectTo = null)
     {
         if (null === $session) {
             $session = new Session('IndieCert');
         }
         $this->session = $session;
+
+        if (null === $io) {
+            $io = new IO();
+        }
 
         if (null === $client) {
             $client = new Client();
@@ -46,7 +53,7 @@ class IndieCertAuthentication implements ServicePluginInterface
 
         $service->post(
             '/indiecert/auth',
-            function (Request $request) use ($session, $authUri, $redirectTo) {
+            function (Request $request) use ($session, $io, $authUri, $redirectTo) {
                 $me = $request->getPostParameter('me');
                 $redirectUri = $request->getRequestUri()->getBaseUri() . $request->getAppRoot() . 'indiecert/callback';
 
@@ -56,7 +63,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                     $redirectTo = $request->getHeader('HTTP_REFERER');
                 }
 
-                $stateValue = '12345';
+                $stateValue = $io->getRandomHex();
                 $session->setValue('state', $stateValue);
                 $session->setValue('redirect_uri', $redirectUri);
                 $session->setValue('redirect_to', $redirectTo);
