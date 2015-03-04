@@ -102,7 +102,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals(
-            'https://indiecert.net/auth?me=mydomain.org&redirect_uri=http://www.example.org/indiecert/callback&state=12345abcdef',
+            'https://indiecert.net/auth?me=https://mydomain.org/&redirect_uri=http://www.example.org/indiecert/callback&state=12345abcdef',
             $response->getHeader('Location')
         );
     }
@@ -125,7 +125,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
 
         $response = $service->run($request);
         $this->assertEquals(400, $response->getStatusCode());
-        $this->assertEquals(array('error' => 'no session state available'), $response->getContent());
+        $this->assertEquals(array('error' => 'missing parameter "state"'), $response->getContent());
     }
 
     public function testIndieCertCallbackNonMatchingState()

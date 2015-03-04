@@ -27,6 +27,8 @@ use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\ServicePluginInterface;
 use fkooman\Rest\Plugin\UserInfo;
 use GuzzleHttp\Client;
+use fkooman\Http\Uri;
+use InvalidArgumentException;
 
 class IndieCertAuthentication implements ServicePluginInterface
 {
@@ -91,19 +93,26 @@ class IndieCertAuthentication implements ServicePluginInterface
         $service->post(
             '/indiecert/auth',
             function (Request $request) {
-                $me = $request->getPostParameter('me');
+                $me = $this->validateMe($request->getPostParameter('me'));
                 $redirectUri = $request->getAppRoot() . 'indiecert/callback';
 
                 if (null === $this->redirectTo) {
-                    $this->redirectTo = $request->getHeader('HTTP_REFERER');
-                }
-
-                if (0 === strpos($this->redirectTo, '/')) {
-                    // assume URI relative to appRoot
-                    $this->redirectTo = $request->getAppRoot() . substr($this->redirectTo, 1);
+                    // no redirectTo specifed, use HTTP_REFERER
+                    $referrer = $request->getHeader('HTTP_REFERER');
+                    if (0 !== strpos($referrer, $request->getAppRoot())) {
+                        throw new BadRequestException('referrer URL wants to redirect outside application');
+                    }
+                    $this->redirectTo = $referrer;
+                } else {
+                    // redirectTo specified, check if it is relative or absolute
+                    if (0 === strpos($this->redirectTo, '/')) {
+                        // assume URI relative to appRoot
+                        $this->redirectTo = $request->getAppRoot() . substr($this->redirectTo, 1);
+                    }
                 }
 
                 $stateValue = $this->io->getRandomHex();
+                $this->session->deleteKey('me');
                 $this->session->setValue('state', $stateValue);
                 $this->session->setValue('redirect_uri', $redirectUri);
                 $this->session->setValue('redirect_to', $this->redirectTo);
@@ -119,10 +128,16 @@ class IndieCertAuthentication implements ServicePluginInterface
             '/indiecert/callback',
             function (Request $request) {
                 $sessionState = $this->session->getValue('state');
+                $sessionRedirectUri = $this->session->getValue('redirect_uri');
+                $redirectTo = $this->session->getValue('redirect_to');
+
+                $queryState = $this->validateState($request->getQueryParameter('state'));
+                $queryCode = $this->validateCode($request->getQueryParameter('code'));
+
                 if (null === $sessionState) {
                     throw new BadRequestException('no session state available');
                 }
-                if ($sessionState !== $request->getQueryParameter('state')) {
+                if ($sessionState !== $queryState) {
                     throw new BadRequestException('non matching state');
                 }
                 $verifyRequest = $this->client->createRequest(
@@ -130,15 +145,13 @@ class IndieCertAuthentication implements ServicePluginInterface
                     $this->verifyUri,
                     array(
                         'body' => array(
-                            'code' => $request->getQueryParameter('code'),
-                            'redirect_uri' => $this->session->getValue('redirect_uri')
+                            'code' => $queryCode,
+                            'redirect_uri' => $sessionRedirectUri
                         )
                     )
                 );
                 $verifyResponse = $this->client->send($verifyRequest)->json();
                 $this->session->setValue('me', $verifyResponse['me']);
-
-                $redirectTo = $this->session->getValue('redirect_to');
 
                 return new RedirectResponse($redirectTo, 302);
             },
@@ -154,5 +167,59 @@ class IndieCertAuthentication implements ServicePluginInterface
         }
 
         return new UserInfo($userId);
+    }
+
+    private function validateState($state)
+    {
+        if (null === $state) {
+            throw new BadRequestException('missing parameter "state"');
+        }
+        if (1 !== preg_match('/^(?:[\x20-\x7E])*$/', $state)) {
+            throw new BadRequestException('"state" contains invalid characters');
+        }
+
+        return $state;
+    }
+
+    private function validateCode($code)
+    {
+        if (null === $code) {
+            throw new BadRequestException('missing parameter "code"');
+        }
+        if (1 !== preg_match('/^(?:[\x20-\x7E])*$/', $code)) {
+            throw new BadRequestException('"code" contains invalid characters');
+        }
+
+        return $code;
+    }
+
+    private function validateMe($me)
+    {
+        if (null === $me) {
+            throw new BadRequestException('missing parameter "me"');
+        }
+        if (0 !== strpos($me, 'http')) {
+            $me = sprintf('https://%s', $me);
+        }
+        try {
+            $uriObj = new Uri($me);
+            if ('https' !== $uriObj->getScheme()) {
+                throw new BadRequestException('"me" must be https uri');
+            }
+            if (null !== $uriObj->getQuery()) {
+                throw new BadRequestException('"me" cannot contain query parameters');
+            }
+            if (null !== $uriObj->getFragment()) {
+                throw new BadRequestException('"me" cannot contain fragment');
+            }
+            // if we have no path add '/'
+            if (null === $uriObj->getPath()) {
+                $me .= '/';
+            }
+            
+            return $me;
+        } catch (InvalidArgumentException $e) {
+            throw new BadRequestException('"me" is an invalid uri');
+        }
     }
 }
