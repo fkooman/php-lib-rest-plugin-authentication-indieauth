@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace fkooman\Rest\Plugin\IndieCert;
+namespace fkooman\Rest\Plugin\IndieAuth;
 
 class PageResponse
 {

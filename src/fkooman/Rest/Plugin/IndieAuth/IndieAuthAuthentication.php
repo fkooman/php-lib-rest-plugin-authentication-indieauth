@@ -16,7 +16,7 @@
 * limitations under the License.
 */
 
-namespace fkooman\Rest\Plugin\IndieCert;
+namespace fkooman\Rest\Plugin\IndieAuth;
 
 use fkooman\Http\Session;
 use fkooman\Http\Request;
@@ -31,7 +31,7 @@ use fkooman\Http\Uri;
 use InvalidArgumentException;
 use DomDocument;
 
-class IndieCertAuthentication implements ServicePluginInterface
+class IndieAuthAuthentication implements ServicePluginInterface
 {
     /** @var string */
     private $redirectTo;
@@ -45,14 +45,14 @@ class IndieCertAuthentication implements ServicePluginInterface
     /** @var GuzzleHttp\Client */
     private $client;
 
-    /** @var fkooman\Rest\Plugin\IndieCert\IO */
+    /** @var fkooman\Rest\Plugin\IndieAuth\IO */
     private $io;
 
     public function __construct($redirectTo = null, $authUri = null)
     {
         $this->redirectTo = $redirectTo;
         if (null === $authUri) {
-            $authUri = 'https://indiecert.net/auth';
+            $authUri = 'https://indieauth.com/auth';
         }
         $this->authUri = $authUri;
     }
@@ -75,7 +75,7 @@ class IndieCertAuthentication implements ServicePluginInterface
     public function init(Service $service)
     {
         if (null === $this->session) {
-            $this->session = new Session('IndieCert');
+            $this->session = new Session('IndieAuth');
         }
         if (null === $this->client) {
             $this->client = new Client();
@@ -85,7 +85,7 @@ class IndieCertAuthentication implements ServicePluginInterface
         }
 
         $service->post(
-            '/indiecert/auth',
+            '/indieauth/auth',
             function (Request $request) {
                 $me = $this->validateMe($request->getPostParameter('me'));
 
@@ -98,7 +98,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                     $this->authUri = $authUri;
                 }
 
-                $redirectUri = $request->getAbsRoot() . 'indiecert/callback';
+                $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
 
                 if (null === $this->redirectTo) {
                     // no redirectTo specifed, use HTTP_REFERER
@@ -128,13 +128,13 @@ class IndieCertAuthentication implements ServicePluginInterface
             },
             array(
                 'skipPlugins' => array(
-                    'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+                    'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
                 )
             )
         );
 
         $service->get(
-            '/indiecert/callback',
+            '/indieauth/callback',
             function (Request $request) {
                 $sessionState = $this->session->getValue('state');
                 $sessionRedirectUri = $this->session->getValue('redirect_uri');
@@ -168,7 +168,7 @@ class IndieCertAuthentication implements ServicePluginInterface
             },
             array(
                 'skipPlugins' => array(
-                    'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+                    'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
                 )
             )
         );
@@ -178,7 +178,7 @@ class IndieCertAuthentication implements ServicePluginInterface
     {
         $userId = $this->session->getValue('me');
         if (null === $userId) {
-            throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieCert');
+            throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieAuth');
         }
 
         return new UserInfo($userId);

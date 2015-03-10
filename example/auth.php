@@ -1,7 +1,7 @@
 <?php
 
 /**
-* Copyright 2014 François Kooman <fkooman@tuxed.net>
+* Copyright 2015 François Kooman <fkooman@tuxed.net>
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ require_once dirname(__DIR__).'/vendor/autoload.php';
 
 use fkooman\Rest\Service;
 use fkooman\Http\Request;
-use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
+use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
 
 try {
     $service = new Service();
     $service->registerOnMatchPlugin(
-        new IndieCertAuthentication(
+        new IndieAuthAuthentication(
             '/welcome'
         )
     );
@@ -34,13 +34,13 @@ try {
     $service->get(
         '/',
         function (Request $request) {
-            // show sign in form, post to 'indiecert/auth' endpoint as registered by plugin
-            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indiecert/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
+            // show sign in form, post to 'indieauth/auth' endpoint as registered by plugin
+            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indieauth/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
         },
         // no authentication needed on welcome page...
         array(
             'skipPlugins' => array(
-                'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+                'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
              )
         )
     );

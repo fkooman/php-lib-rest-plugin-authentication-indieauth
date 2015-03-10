@@ -19,8 +19,8 @@
 namespace fkooman\Rest;
 
 use fkooman\Http\Request;
-use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
-use fkooman\Rest\Plugin\IndieCert\IO;
+use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
+use fkooman\Rest\Plugin\IndieAuth\IO;
 use fkooman\Rest\Service;
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
@@ -28,9 +28,9 @@ use GuzzleHttp\Message\Response;
 use GuzzleHttp\Stream\Stream;
 use PHPUnit_Framework_TestCase;
 
-class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
+class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 {
-    public function testIndieCertAuthenticated()
+    public function testIndieAuthAuthenticated()
     {
         $request = new Request('http://www.example.org/foo', 'GET');
         //$service = new Service();
@@ -42,10 +42,10 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
             'https://mydomain.org/'
         );
 
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
-        $indieCertAuth->init(new Service());
-        $userInfo = $indieCertAuth->execute($request);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->init(new Service());
+        $userInfo = $indieAuthAuth->execute($request);
         $this->assertEquals('https://mydomain.org/', $userInfo->getUserId());
     }
 
@@ -53,7 +53,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
      * @expectedException fkooman\Http\Exception\UnauthorizedException
      * @expectedExceptionMessage not authenticated
      */
-    public function testIndieCertNotAuthenticated()
+    public function testIndieAuthNotAuthenticated()
     {
         $request = new Request('http://www.example.org/foo', 'GET');
         //$service = new Service();
@@ -62,18 +62,18 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->disableOriginalConstructor()
                      ->getMock();
 
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
 
-        $indieCertAuth->init(new Service());
-        $indieCertAuth->execute($request);
+        $indieAuthAuth->init(new Service());
+        $indieAuthAuth->execute($request);
     }
 
-    public function testIndieCertAuthRequest()
+    public function testIndieAuthAuthRequest()
     {
-        $request = new Request('http://www.example.org/indiecert/auth', 'POST');
+        $request = new Request('http://www.example.org/indieauth/auth', 'POST');
         $request->setRoot('/');
-        $request->setPathInfo('/indiecert/auth');
+        $request->setPathInfo('/indieauth/auth');
         $request->setHeaders(
             array(
                 'HTTP_REFERER' => 'http://www.example.org/'
@@ -85,7 +85,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
             )
         );
                       
-        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\IndieCert\IO')
+        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\IndieAuth\IO')
                      ->disableOriginalConstructor()
                      ->getMock();
         $ioStub->method('getRandomHex')->willReturn(
@@ -111,16 +111,16 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->getMock();
 
         $service = new Service();
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
-        $indieCertAuth->setIo($ioStub);
-        $indieCertAuth->setClient($client);
-        $indieCertAuth->init($service);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->setIo($ioStub);
+        $indieAuthAuth->setClient($client);
+        $indieAuthAuth->init($service);
 
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals(
-            'https://indiecert.net/auth?me=https://mydomain.org/&redirect_uri=http://www.example.org/indiecert/callback&state=12345abcdef',
+            'https://indiecert.net/auth?me=https://mydomain.org/&redirect_uri=http://www.example.org/indieauth/callback&state=12345abcdef',
             $response->getHeader('Location')
         );
     }
@@ -129,11 +129,11 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
      * @expectedException fkooman\Http\Exception\BadRequestException
      * @expectedExceptionMessage missing parameter "state"
      */
-    public function testIndieCertCallbackNoSessionState()
+    public function testIndieAuthCallbackNoSessionState()
     {
-        $request = new Request('http://www.example.org/indiecert/callback?code=54321', 'GET');
+        $request = new Request('http://www.example.org/indieauth/callback?code=54321', 'GET');
         $request->setRoot('/');
-        $request->setPathInfo('/indiecert/callback');
+        $request->setPathInfo('/indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -141,9 +141,9 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
 
         $service = new Service();
 
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
-        $indieCertAuth->init($service);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->init($service);
 
         $service->run($request);
     }
@@ -152,11 +152,11 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
      * @expectedException fkooman\Http\Exception\BadRequestException
      * @expectedExceptionMessage non matching state
      */
-    public function testIndieCertCallbackNonMatchingState()
+    public function testIndieAuthCallbackNonMatchingState()
     {
-        $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
+        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
         $request->setRoot('/');
-        $request->setPathInfo('/indiecert/callback');
+        $request->setPathInfo('/indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -165,25 +165,25 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
 
         $service = new Service();
 
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
-        $indieCertAuth->init($service);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->init($service);
 
         $service->run($request);
     }
 
-    public function testIndieCertCallback()
+    public function testIndieAuthCallback()
     {
-        $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
+        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
         $request->setRoot('/');
-        $request->setPathInfo('/indiecert/callback');
+        $request->setPathInfo('/indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
         $map = array(
             array('state', '12345abcdef'),
-            array('redirect_uri', 'http://www.example.org/indiecert/callback'),
+            array('redirect_uri', 'http://www.example.org/indieauth/callback'),
             array('redirect_to', 'http://www.example.org/'),
             array('auth_uri', 'https://indiefoo.net/auth')
         );
@@ -208,10 +208,10 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $client->getEmitter()->attach($mock);
 
         $service = new Service();
-        $indieCertAuth = new IndieCertAuthentication();
-        $indieCertAuth->setSession($sessionStub);
-        $indieCertAuth->setClient($client);
-        $indieCertAuth->init($service);
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->setClient($client);
+        $indieAuthAuth->init($service);
 
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());

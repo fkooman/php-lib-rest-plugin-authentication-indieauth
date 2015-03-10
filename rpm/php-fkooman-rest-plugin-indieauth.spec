@@ -1,13 +1,13 @@
 %global composer_vendor  fkooman
-%global composer_project rest-plugin-indiecert
+%global composer_project rest-plugin-indieauth
 
 %global github_owner     fkooman
-%global github_name      php-lib-rest-plugin-indiecert
+%global github_name      php-lib-rest-plugin-indieauth
 
 Name:       php-%{composer_vendor}-%{composer_project}
 Version:    0.1.0
 Release:    1%{?dist}
-Summary:    IndieCert Authentication plugin for fkooman/rest
+Summary:    IndieAuth Authentication plugin for fkooman/rest
 
 Group:      System Environment/Libraries
 License:    ASL 2.0
@@ -36,8 +36,8 @@ cp -pr src/* ${RPM_BUILD_ROOT}%{_datadir}/php
 
 %files
 %defattr(-,root,root,-)
-%dir %{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieCert
-%{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieCert/*
+%dir %{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieAuth
+%{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieAuth/*
 %doc README.md CHANGES.md COPYING composer.json
 
 %changelog
