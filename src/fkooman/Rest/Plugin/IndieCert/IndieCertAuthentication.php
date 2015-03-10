@@ -144,6 +144,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                     'POST',
                     $this->verifyUri,
                     array(
+                        'headers' => array('Accept' => 'application/json'),
                         'body' => array(
                             'code' => $queryCode,
                             'redirect_uri' => $sessionRedirectUri
