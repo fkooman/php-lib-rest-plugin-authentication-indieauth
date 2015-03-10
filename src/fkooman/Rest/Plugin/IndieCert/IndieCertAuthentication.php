@@ -38,9 +38,6 @@ class IndieCertAuthentication implements ServicePluginInterface
     /** @var string */
     private $authUri;
 
-    /** @var string */
-    private $verifyUri;
-
     /** @var fkooman\Http\Session */
     private $session;
 
@@ -50,17 +47,13 @@ class IndieCertAuthentication implements ServicePluginInterface
     /** @var fkooman\Rest\Plugin\IndieCert\IO */
     private $io;
 
-    public function __construct($redirectTo = null, $authUri = null, $verifyUri = null)
+    public function __construct($redirectTo = null, $authUri = null)
     {
         $this->redirectTo = $redirectTo;
         if (null === $authUri) {
             $authUri = 'https://indiecert.net/auth';
         }
         $this->authUri = $authUri;
-        if (null === $verifyUri) {
-            $verifyUri = 'https://indiecert.net/verify';
-        }
-        $this->verifyUri = $verifyUri;
     }
 
     public function setSession(Session $session)
@@ -146,7 +139,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                 }
                 $verifyRequest = $this->client->createRequest(
                     'POST',
-                    $this->verifyUri,
+                    $this->authUri,
                     array(
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
