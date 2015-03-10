@@ -39,6 +39,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var string */
     private $authUri;
 
+    /** @var boolean */
+    private $discoveryEnabled;
+
     /** @var fkooman\Http\Session */
     private $session;
 
@@ -55,6 +58,12 @@ class IndieAuthAuthentication implements ServicePluginInterface
             $authUri = 'https://indieauth.com/auth';
         }
         $this->authUri = $authUri;
+        $this->discoveryEnabled = true;
+    }
+
+    public function setDiscovery($discoveryEnabled)
+    {
+        $this->discoveryEnabled = (bool) $discoveryEnabled;
     }
 
     public function setSession(Session $session)
@@ -89,13 +98,15 @@ class IndieAuthAuthentication implements ServicePluginInterface
             function (Request $request) {
                 $me = $this->validateMe($request->getPostParameter('me'));
 
-                // try to find authorization_endpoint
-                $pageFetcher = new PageFetcher($this->client);
-                $pageResponse = $pageFetcher->fetch($me);
-                $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
-                if (null !== $authUri) {
-                    // FIXME: check if it is a valid HTTPS URI
-                    $this->authUri = $authUri;
+                if ($this->discoveryEnabled) {
+                    // try to find authorization_endpoint
+                    $pageFetcher = new PageFetcher($this->client);
+                    $pageResponse = $pageFetcher->fetch($me);
+                    $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
+                    if (null !== $authUri) {
+                        // FIXME: check if it is a valid HTTPS URI
+                        $this->authUri = $authUri;
+                    }
                 }
 
                 $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
