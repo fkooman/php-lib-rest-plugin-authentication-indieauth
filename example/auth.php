@@ -49,7 +49,7 @@ try {
         '/welcome',
         function (UserInfo $u) {
             // here we do need to be authenticated...
-            return sprintf('Hello %s', $u->getUserId());
+            return sprintf('<html><head></head><body><h1>Hello</h1><p>Hello %s</p></body></html>', $u->getUserId());
         }
     );
 
