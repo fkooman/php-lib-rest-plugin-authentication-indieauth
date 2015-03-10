@@ -41,5 +41,5 @@ cp -pr src/* ${RPM_BUILD_ROOT}%{_datadir}/php
 %doc README.md CHANGES.md COPYING composer.json
 
 %changelog
-* Tue Mar 03 2015 François Kooman <fkooman@tuxed.net> - 0.1.0-1
+* Tue Mar 10 2015 François Kooman <fkooman@tuxed.net> - 0.1.0-1
 - initial package
