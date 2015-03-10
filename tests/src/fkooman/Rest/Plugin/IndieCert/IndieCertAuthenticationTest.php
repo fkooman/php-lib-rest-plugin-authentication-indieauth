@@ -72,9 +72,13 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
     public function testIndieCertAuthRequest()
     {
         $request = new Request('http://www.example.org/indiecert/auth', 'POST');
-        $request->setBaseDir('/');
+        $request->setRoot('/');
         $request->setPathInfo('/indiecert/auth');
-        $request->setHeader('HTTP_REFERER', 'http://www.example.org/');
+        $request->setHeaders(
+            array(
+                'HTTP_REFERER' => 'http://www.example.org/'
+            )
+        );
         $request->setPostParameters(
             array(
                 'me' => 'mydomain.org'
@@ -107,10 +111,14 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @expectedException fkooman\Http\Exception\BadRequestException
+     * @expectedExceptionMessage missing parameter "state"
+     */
     public function testIndieCertCallbackNoSessionState()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321', 'GET');
-        $request->setBaseDir('/');
+        $request->setRoot('/');
         $request->setPathInfo('/indiecert/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
@@ -123,15 +131,17 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieCertAuth->setSession($sessionStub);
         $indieCertAuth->init($service);
 
-        $response = $service->run($request);
-        $this->assertEquals(400, $response->getStatusCode());
-        $this->assertEquals(array('error' => 'missing parameter "state"'), $response->getContent());
+        $service->run($request);
     }
 
+    /**
+     * @expectedException fkooman\Http\Exception\BadRequestException
+     * @expectedExceptionMessage non matching state
+     */
     public function testIndieCertCallbackNonMatchingState()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
-        $request->setBaseDir('/');
+        $request->setRoot('/');
         $request->setPathInfo('/indiecert/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
@@ -145,15 +155,13 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieCertAuth->setSession($sessionStub);
         $indieCertAuth->init($service);
 
-        $response = $service->run($request);
-        $this->assertEquals(400, $response->getStatusCode());
-        $this->assertEquals(array('error' => 'non matching state'), $response->getContent());
+        $service->run($request);
     }
 
     public function testIndieCertCallback()
     {
         $request = new Request('http://www.example.org/indiecert/callback?code=54321&state=12345abcdef', 'GET');
-        $request->setBaseDir('/');
+        $request->setRoot('/');
         $request->setPathInfo('/indiecert/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')

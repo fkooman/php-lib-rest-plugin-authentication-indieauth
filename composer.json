@@ -16,7 +16,7 @@
     "name": "fkooman/rest-plugin-indiecert",
     "require": {
         "ext-openssl": "*",
-        "fkooman/rest": "dev-master",
+        "fkooman/rest": "~0.7.0",
         "guzzlehttp/guzzle": "~4.0",
         "php": ">=5.3.3"
     }

@@ -23,29 +23,33 @@ use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
 
-$service = new Service();
-$service->registerOnMatchPlugin(
-    new IndieCertAuthentication(
-        '/welcome'
-    )
-);
+try {
+    $service = new Service();
+    $service->registerOnMatchPlugin(
+        new IndieCertAuthentication(
+            '/welcome'
+        )
+    );
 
-$service->get(
-    '/',
-    function (Request $request) {
-        // show sign in form, post to 'indiecert/auth' endpoint as registered by plugin
-        return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indiecert/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
-    },
-    // no authentication needed on welcome page...
-    array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
-);
+    $service->get(
+        '/',
+        function (Request $request) {
+            // show sign in form, post to 'indiecert/auth' endpoint as registered by plugin
+            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indiecert/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
+        },
+        // no authentication needed on welcome page...
+        array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
+    );
 
-$service->get(
-    '/welcome',
-    function (UserInfo $u) {
-        // here we do need to be authenticated...
-        return sprintf('Hello %s', $u->getUserId());
-    }
-);
+    $service->get(
+        '/welcome',
+        function (UserInfo $u) {
+            // here we do need to be authenticated...
+            return sprintf('Hello %s', $u->getUserId());
+        }
+    );
 
-$service->run()->sendResponse();
+    $service->run()->sendResponse();
+} catch (Exception $e) {
+    Service::errorHandler($e)->sendResponse();
+}

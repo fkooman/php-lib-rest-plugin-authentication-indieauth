@@ -94,20 +94,20 @@ class IndieCertAuthentication implements ServicePluginInterface
             '/indiecert/auth',
             function (Request $request) {
                 $me = $this->validateMe($request->getPostParameter('me'));
-                $redirectUri = $request->getAppRoot() . 'indiecert/callback';
+                $redirectUri = $request->getAbsRoot() . 'indiecert/callback';
 
                 if (null === $this->redirectTo) {
                     // no redirectTo specifed, use HTTP_REFERER
                     $referrer = $request->getHeader('HTTP_REFERER');
-                    if (0 !== strpos($referrer, $request->getAppRoot())) {
+                    if (0 !== strpos($referrer, $request->getAbsRoot())) {
                         throw new BadRequestException('referrer URL wants to redirect outside application');
                     }
                     $this->redirectTo = $referrer;
                 } else {
                     // redirectTo specified, check if it is relative or absolute
                     if (0 === strpos($this->redirectTo, '/')) {
-                        // assume URI relative to appRoot
-                        $this->redirectTo = $request->getAppRoot() . substr($this->redirectTo, 1);
+                        // assume URI relative to absRoot
+                        $this->redirectTo = $request->getAbsRoot() . substr($this->redirectTo, 1);
                     }
                 }
 
