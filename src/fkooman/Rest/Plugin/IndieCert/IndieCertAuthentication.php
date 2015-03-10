@@ -121,7 +121,11 @@ class IndieCertAuthentication implements ServicePluginInterface
 
                 return new RedirectResponse($fullAuthUri, 302);
             },
-            array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
+            array(
+                'skipPlugins' => array(
+                    'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+                )
+            )
         );
 
         $service->get(
@@ -156,7 +160,11 @@ class IndieCertAuthentication implements ServicePluginInterface
 
                 return new RedirectResponse($redirectTo, 302);
             },
-            array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
+            array(
+                'skipPlugins' => array(
+                    'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+                )
+            )
         );
     }
 

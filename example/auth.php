@@ -38,7 +38,11 @@ try {
             return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indiecert/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
         },
         // no authentication needed on welcome page...
-        array('fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication')
+        array(
+            'skipPlugins' => array(
+                'fkooman\Rest\Plugin\IndieCert\IndieCertAuthentication'
+             )
+        )
     );
 
     $service->get(
@@ -51,5 +55,5 @@ try {
 
     $service->run()->sendResponse();
 } catch (Exception $e) {
-    Service::errorHandler($e)->sendResponse();
+    Service::handleException($e)->sendResponse();
 }
