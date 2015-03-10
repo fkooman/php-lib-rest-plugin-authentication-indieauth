@@ -29,6 +29,7 @@ use fkooman\Rest\Plugin\UserInfo;
 use GuzzleHttp\Client;
 use fkooman\Http\Uri;
 use InvalidArgumentException;
+use DomDocument;
 
 class IndieCertAuthentication implements ServicePluginInterface
 {
@@ -87,6 +88,16 @@ class IndieCertAuthentication implements ServicePluginInterface
             '/indiecert/auth',
             function (Request $request) {
                 $me = $this->validateMe($request->getPostParameter('me'));
+
+                // try to find authorization_endpoint
+                $pageFetcher = new PageFetcher($this->client);
+                $pageResponse = $pageFetcher->fetch($me);
+                $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
+                if (null !== $authUri) {
+                    // FIXME: check if it is a valid HTTPS URI
+                    $this->authUri = $authUri;
+                }
+
                 $redirectUri = $request->getAbsRoot() . 'indiecert/callback';
 
                 if (null === $this->redirectTo) {
@@ -106,6 +117,7 @@ class IndieCertAuthentication implements ServicePluginInterface
 
                 $stateValue = $this->io->getRandomHex();
                 $this->session->deleteKey('me');
+                $this->session->setValue('auth_uri', $this->authUri);
                 $this->session->setValue('state', $stateValue);
                 $this->session->setValue('redirect_uri', $redirectUri);
                 $this->session->setValue('redirect_to', $this->redirectTo);
@@ -126,6 +138,7 @@ class IndieCertAuthentication implements ServicePluginInterface
             function (Request $request) {
                 $sessionState = $this->session->getValue('state');
                 $sessionRedirectUri = $this->session->getValue('redirect_uri');
+                $authUri = $this->session->getValue('auth_uri');
                 $redirectTo = $this->session->getValue('redirect_to');
 
                 $queryState = $this->validateState($request->getQueryParameter('state'));
@@ -139,7 +152,7 @@ class IndieCertAuthentication implements ServicePluginInterface
                 }
                 $verifyRequest = $this->client->createRequest(
                     'POST',
-                    $this->authUri,
+                    $authUri,
                     array(
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
@@ -223,5 +236,30 @@ class IndieCertAuthentication implements ServicePluginInterface
         } catch (InvalidArgumentException $e) {
             throw new BadRequestException('"me" is an invalid uri');
         }
+    }
+
+    private function extractAuthorizeEndpoint($htmlString)
+    {
+        $dom = new DomDocument();
+        // disable error handling by DomDocument so we handle them ourselves
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($htmlString);
+        // throw away all errors, we do not care about them anyway
+        libxml_clear_errors();
+
+        $tags = array('link', 'a');
+        $relLinks = array();
+        foreach ($tags as $tag) {
+            $elements = $dom->getElementsByTagName($tag);
+            foreach ($elements as $element) {
+                $rel = $element->getAttribute('rel');
+                if ('authorization_endpoint' === $rel) {
+                    return $element->getAttribute('href');
+                    ;
+                }
+            }
+        }
+
+        return null;
     }
 }

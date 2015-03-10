@@ -92,6 +92,19 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
             '12345abcdef'
         );
 
+        $client = new Client();
+        $mock = new Mock(
+            array(
+                new Response(
+                    200,
+                    array('Content-Type' => 'text/html'),
+                    Stream::factory(
+                        file_get_contents(dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/data/fkooman.html')
+                    )
+                )
+            )
+        );
+        $client->getEmitter()->attach($mock);
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -101,6 +114,7 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieCertAuth = new IndieCertAuthentication();
         $indieCertAuth->setSession($sessionStub);
         $indieCertAuth->setIo($ioStub);
+        $indieCertAuth->setClient($client);
         $indieCertAuth->init($service);
 
         $response = $service->run($request);
@@ -167,7 +181,13 @@ class IndieCertAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('getValue')->will($this->onConsecutiveCalls('12345abcdef', 'http://www.example.org/indiecert/callback', 'http://www.example.org/'));
+        $map = array(
+            array('state', '12345abcdef'),
+            array('redirect_uri', 'http://www.example.org/indiecert/callback'),
+            array('redirect_to', 'http://www.example.org/'),
+            array('auth_uri', 'https://indiefoo.net/auth')
+        );
+        $sessionStub->method('getValue')->will($this->returnValueMap($map));
 
         $client = new Client();
         $mock = new Mock(
