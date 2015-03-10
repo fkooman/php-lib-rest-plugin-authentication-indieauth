@@ -1,5 +1,8 @@
 # Release History
 
+## 0.1.2
+- better indieauth.com compatibility
+
 ## 0.1.1
 - allow disabling discovery (distributed IndieAuth)
 

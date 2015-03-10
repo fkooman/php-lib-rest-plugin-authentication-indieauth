@@ -109,6 +109,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                     }
                 }
 
+                $clientId = $request->getAbsRoot();
                 $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
 
                 if (null === $this->redirectTo) {
@@ -130,10 +131,18 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 $this->session->deleteKey('me');
                 $this->session->setValue('auth_uri', $this->authUri);
                 $this->session->setValue('state', $stateValue);
+                $this->session->setValue('client_id', $clientId);
                 $this->session->setValue('redirect_uri', $redirectUri);
                 $this->session->setValue('redirect_to', $this->redirectTo);
 
-                $fullAuthUri = sprintf('%s?me=%s&redirect_uri=%s&state=%s', $this->authUri, $me, $redirectUri, $stateValue);
+                $fullAuthUri = sprintf(
+                    '%s?client_id=%s&me=%s&redirect_uri=%s&state=%s',
+                    $this->authUri,
+                    $clientId,
+                    $me,
+                    $redirectUri,
+                    $stateValue
+                );
 
                 return new RedirectResponse($fullAuthUri, 302);
             },
@@ -149,6 +158,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             function (Request $request) {
                 $sessionState = $this->session->getValue('state');
                 $sessionRedirectUri = $this->session->getValue('redirect_uri');
+                $sessionClientId = $this->session->getValue('client_id');
                 $authUri = $this->session->getValue('auth_uri');
                 $redirectTo = $this->session->getValue('redirect_to');
 
@@ -167,13 +177,36 @@ class IndieAuthAuthentication implements ServicePluginInterface
                     array(
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
+                            // FIXME: https://github.com/aaronpk/IndieAuth.com/issues/81
+                            'state' => $sessionState,
+                            'client_id' => $sessionClientId,
                             'code' => $queryCode,
                             'redirect_uri' => $sessionRedirectUri
                         )
                     )
                 );
-                $verifyResponse = $this->client->send($verifyRequest)->json();
-                $this->session->setValue('me', $verifyResponse['me']);
+
+                // FIXME: we need to verify that what we get back is actual JSON,
+                // IndieAuth.com does not yet honor the Accept header, this can
+                // all go away when it does...
+                $verifyResponse = $this->client->send($verifyRequest);
+                $contentType = $verifyResponse->getHeader('Content-Type');
+                if (0 === strpos($contentType, 'application/json')) {
+                    $verifyData = $verifyResponse->json();
+                } elseif (0 === strpos($contentType, 'application/x-www-form-urlencoded')) {
+                    $verifyData = array();
+                    $responseBody = (string) $verifyResponse->getBody();
+
+                    parse_str((string) $verifyResponse->getBody(), $verifyData);
+                } else {
+                    throw new RuntimeException('invalid content type from verify endpoint');
+                }
+                
+                if (!array_key_exists('me', $verifyData)) {
+                    throw new RuntimeException('me field not found in verify response');
+                }
+
+                $this->session->setValue('me', $verifyData['me']);
 
                 return new RedirectResponse($redirectTo, 302);
             },

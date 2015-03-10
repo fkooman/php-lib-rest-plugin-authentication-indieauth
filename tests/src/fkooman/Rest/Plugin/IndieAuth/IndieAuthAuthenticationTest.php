@@ -120,7 +120,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals(
-            'https://indiecert.net/auth?me=https://mydomain.org/&redirect_uri=http://www.example.org/indieauth/callback&state=12345abcdef',
+            'https://indiecert.net/auth?client_id=http://www.example.org/&me=https://mydomain.org/&redirect_uri=http://www.example.org/indieauth/callback&state=12345abcdef',
             $response->getHeader('Location')
         );
     }
