@@ -22,14 +22,27 @@ use fkooman\Rest\Service;
 use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
+use GuzzleHttp\Client;
 
 try {
     $service = new Service();
-    $service->registerOnMatchPlugin(
-        new IndieAuthAuthentication(
-            '/welcome'
+
+    $client = new Client(
+        array(
+            'defaults' => array(
+                // disable SSL cert check
+                // ONLY FOR DEVELOPMENT!!!
+                'verify' => false
+            )
         )
     );
+    
+    $indieAuth = new IndieAuthAuthentication('/welcome');
+    $indieAuth->setClient($client);
+
+    $service->registerOnMatchPlugin($indieAuth);
+
+    $service->setDefaultRoute('/');
 
     $service->get(
         '/',
