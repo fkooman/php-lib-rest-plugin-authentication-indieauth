@@ -163,7 +163,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             },
             array(
                 'skipPlugins' => array(
-                    'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
+                    __CLASS__
                 )
             )
         );
@@ -218,7 +218,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             },
             array(
                 'skipPlugins' => array(
-                    'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
+                    __CLASS__
                 )
             )
         );
