@@ -1,5 +1,8 @@
 # Release History
 
+## 0.1.3
+- support `application/x-www-form-urlencoded` response to verify request again
+
 ## 0.1.2
 - for now break `indieauth.com` until they fix the `Accept` header on verify 
   endpoint and no longer require `state` POST parameter on verify

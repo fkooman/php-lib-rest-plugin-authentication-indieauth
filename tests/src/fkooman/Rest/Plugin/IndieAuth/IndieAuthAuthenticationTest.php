@@ -172,10 +172,11 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $service->run($request);
     }
 
-    public function testIndieAuthCallback()
+    public function testIndieAuthCallbackJson()
     {
         $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
         $request->setRoot('/');
+        $request->setHeaders(array('Accept' => 'application/json'));
         $request->setPathInfo('/indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
@@ -201,6 +202,49 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                                 'me' => 'https://mydomain.org/'
                             )
                         )
+                    )
+                )
+            )
+        );
+        $client->getEmitter()->attach($mock);
+
+        $service = new Service();
+        $indieAuthAuth = new IndieAuthAuthentication();
+        $indieAuthAuth->setSession($sessionStub);
+        $indieAuthAuth->setClient($client);
+        $indieAuthAuth->init($service);
+
+        $response = $service->run($request);
+        $this->assertEquals(302, $response->getStatusCode());
+        $this->assertEquals('http://www.example.org/', $response->getHeader('Location'));
+    }
+
+    public function testIndieAuthCallbackForm()
+    {
+        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
+        $request->setRoot('/');
+        $request->setHeaders(array('Accept' => 'application/x-www-form-urlencoded'));
+        $request->setPathInfo('/indieauth/callback');
+
+        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
+                     ->disableOriginalConstructor()
+                     ->getMock();
+        $map = array(
+            'state' => '12345abcdef',
+            'redirect_to' => 'http://www.example.org/',
+            'auth_uri' => 'https://indiefoo.net/auth',
+            'me' => 'https://mydomain.org/'
+        );
+        $sessionStub->method('getValue')->willReturn($map);
+
+        $client = new Client();
+        $mock = new Mock(
+            array(
+                new Response(
+                    200,
+                    array('Content-Type' => 'application/x-www-form-urlencoded'),
+                    Stream::factory(
+                        'me=https%3A%2F%2Fmydomain.org%2F'
                     )
                 )
             )

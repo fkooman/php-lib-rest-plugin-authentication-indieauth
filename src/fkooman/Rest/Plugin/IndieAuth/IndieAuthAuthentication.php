@@ -27,6 +27,7 @@ use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\ServicePluginInterface;
 use fkooman\Rest\Plugin\UserInfo;
 use GuzzleHttp\Client;
+use GuzzleHttp\Message\Response;
 use fkooman\Http\Uri;
 use InvalidArgumentException;
 use DomDocument;
@@ -194,20 +195,23 @@ class IndieAuthAuthentication implements ServicePluginInterface
                     )
                 );
 
-                $verifyResponse = $this->client->send($verifyRequest);
-                if (false === strpos($verifyResponse->getHeader('Content-Type'), 'application/json')) {
-                    throw new RuntimeException('invalid content type from verify endpoint');
-                }
-                $verifyData = $verifyResponse->json();
+                $responseData = $this->decodeResponse($this->client->send($verifyRequest));
                 
-                if (!array_key_exists('me', $verifyData)) {
-                    throw new RuntimeException('me field not found in verify response');
-                }
-                if ($authSession['me'] !== $verifyData['me']) {
-                    throw new RuntimeException('verified me value is different from expected value');
+                if (!is_array($responseData) || !array_key_exists('me', $responseData)) {
+                    throw new RuntimeException('me field not found in response');
                 }
 
-                $this->session->setValue('me', $verifyData['me']);
+                if ($authSession['me'] !== $responseData['me']) {
+                    throw new RuntimeException(
+                        sprintf(
+                            'received "me" (%s) different from expected "me" (%s)',
+                            $responseData['me'],
+                            $authSession['me']
+                        )
+                    );
+                }
+
+                $this->session->setValue('me', $responseData['me']);
                 $this->session->deleteKey('auth');
 
                 return new RedirectResponse($authSession['redirect_to'], 302);
@@ -301,5 +305,24 @@ class IndieAuthAuthentication implements ServicePluginInterface
         }
 
         return null;
+    }
+
+    private function decodeResponse(Response $response)
+    {
+        $contentType = $response->getHeader('Content-Type');
+
+        if (false !== strpos($contentType, 'application/json')) {
+            return $response->json();
+        }
+
+        if (false !== strpos($contentType, 'application/x-www-form-urlencoded')) {
+            $verifyData = array();
+            $responseBody = strval($response->getBody());
+            parse_str($responseBody, $verifyData);
+
+            return $verifyData;
+        }
+
+        throw new RuntimeException('invalid content type from verify endpoint');
     }
 }
