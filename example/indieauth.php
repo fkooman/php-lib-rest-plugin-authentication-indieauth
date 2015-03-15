@@ -22,7 +22,6 @@ use fkooman\Rest\Service;
 use fkooman\Http\Request;
 use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
 use fkooman\Rest\Plugin\UserInfo;
-use GuzzleHttp\Client;
 
 try {
     $service = new Service();
