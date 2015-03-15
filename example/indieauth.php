@@ -26,32 +26,27 @@ use GuzzleHttp\Client;
 
 try {
     $service = new Service();
+    $service->setDefaultRoute('/welcome');
 
-    $client = new Client(
-        array(
-            'defaults' => array(
-                // disable SSL cert check
-                // ONLY FOR DEVELOPMENT!!!
-                'verify' => false
-            )
-        )
-    );
-    
-    $indieAuth = new IndieAuthAuthentication('/welcome');
-    $indieAuth->setClient($client);
+    // use https://indiecert.net/auth
+    $indieAuth = new IndieAuthAuthentication('/success');
+
+    // use IndieAuth
+    //$indieAuth = new IndieAuthAuthentication('/success', 'https://indieauth.com/auth');
+
+    // disable discovery (i.e. "Distributed IndieAuth")
+    // $indieAuth->setDiscovery(false);
 
     $service->registerOnMatchPlugin($indieAuth);
 
-    $service->setDefaultRoute('/');
-
     $service->get(
-        '/',
+        '/welcome',
         function (Request $request) {
-            // show sign in form, post to 'indieauth/auth' endpoint as registered by plugin
-            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indieauth/auth"><input type="text" name="me" placeholder="yourdomain.com"><input type="submit" value="Sign In"></form></body></html>';
+            // Show Sign In form;  POST to 'indieauth/auth' endpoint which is registered by the IndieAuth plugin
+            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indieauth/auth">https://<input type="text" name="me" placeholder="example.org"><input type="submit" value="Sign In"></form></body></html>';
         },
-        // no authentication needed on welcome page...
         array(
+            // To view the "welcome" page, no authentication is required
             'skipPlugins' => array(
                 'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication'
              )
@@ -59,14 +54,14 @@ try {
     );
 
     $service->get(
-        '/welcome',
+        '/success',
         function (UserInfo $u) {
-            // here we do need to be authenticated...
             return sprintf('<html><head></head><body><h1>Hello</h1><p>Hello %s</p></body></html>', $u->getUserId());
         }
     );
 
     $service->run()->sendResponse();
 } catch (Exception $e) {
+    // in case en error occurred we display a HTML page with more details
     Service::handleException($e)->sendResponse();
 }
