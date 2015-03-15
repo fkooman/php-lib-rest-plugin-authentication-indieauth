@@ -30,6 +30,7 @@ use GuzzleHttp\Client;
 use fkooman\Http\Uri;
 use InvalidArgumentException;
 use DomDocument;
+use RuntimeException;
 
 class IndieAuthAuthentication implements ServicePluginInterface
 {
@@ -55,7 +56,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
     {
         $this->redirectTo = $redirectTo;
         if (null === $authUri) {
-            $authUri = 'https://indieauth.com/auth';
+            $authUri = 'https://indiecert.net/auth';
         }
         $this->authUri = $authUri;
         $this->discoveryEnabled = true;
@@ -96,16 +97,27 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $service->post(
             '/indieauth/auth',
             function (Request $request) {
+                $this->session->deleteKey('me');
+                $this->session->deleteKey('auth');
+
                 $me = $this->validateMe($request->getPostParameter('me'));
 
+                // if discovery is enabled, we try find the authorization_endpoint
                 if ($this->discoveryEnabled) {
-                    // try to find authorization_endpoint
                     $pageFetcher = new PageFetcher($this->client);
                     $pageResponse = $pageFetcher->fetch($me);
+                    //$expectedMe = $pageResponse->getEffectiveUrl();
                     $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
                     if (null !== $authUri) {
-                        // FIXME: check if it is a valid HTTPS URI
-                        $this->authUri = $authUri;
+                        try {
+                            $authUriObj = new Uri($authUri);
+                            if ('https' !== $authUriObj->getScheme()) {
+                                throw new RuntimeException('authorization_endpoint must be a valid https URL');
+                            }
+                            $this->authUri = $authUriObj->getUri();
+                        } catch (InvalidArgumentException $e) {
+                            throw new RuntimeException('authorization_endpoint must be a valid URL');
+                        }
                     }
                 }
 
@@ -128,12 +140,14 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
 
                 $stateValue = $this->io->getRandomHex();
-                $this->session->deleteKey('me');
-                $this->session->setValue('auth_uri', $this->authUri);
-                $this->session->setValue('state', $stateValue);
-                $this->session->setValue('client_id', $clientId);
-                $this->session->setValue('redirect_uri', $redirectUri);
-                $this->session->setValue('redirect_to', $this->redirectTo);
+
+                $authSession = array(
+                    'auth_uri' => $this->authUri,
+                    'me' => $me,
+                    'state' => $stateValue,
+                    'redirect_to' => $this->redirectTo
+                );
+                $this->session->setValue('auth', $authSession);
 
                 $fullAuthUri = sprintf(
                     '%s?client_id=%s&me=%s&redirect_uri=%s&state=%s',
@@ -156,59 +170,47 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $service->get(
             '/indieauth/callback',
             function (Request $request) {
-                $sessionState = $this->session->getValue('state');
-                $sessionRedirectUri = $this->session->getValue('redirect_uri');
-                $sessionClientId = $this->session->getValue('client_id');
-                $authUri = $this->session->getValue('auth_uri');
-                $redirectTo = $this->session->getValue('redirect_to');
+                $authSession = $this->session->getValue('auth');
 
                 $queryState = $this->validateState($request->getQueryParameter('state'));
                 $queryCode = $this->validateCode($request->getQueryParameter('code'));
 
-                if (null === $sessionState) {
+                if (null === $authSession['state']) {
                     throw new BadRequestException('no session state available');
                 }
-                if ($sessionState !== $queryState) {
+                if ($authSession['state'] !== $queryState) {
                     throw new BadRequestException('non matching state');
                 }
                 $verifyRequest = $this->client->createRequest(
                     'POST',
-                    $authUri,
+                    $authSession['auth_uri'],
                     array(
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
-                            // FIXME: https://github.com/aaronpk/IndieAuth.com/issues/81
-                            'state' => $sessionState,
-                            'client_id' => $sessionClientId,
+                            'client_id' => $request->getAbsRoot(),
                             'code' => $queryCode,
-                            'redirect_uri' => $sessionRedirectUri
+                            'redirect_uri' => $request->getAbsRoot() . 'indieauth/callback'
                         )
                     )
                 );
 
-                // FIXME: we need to verify that what we get back is actual JSON,
-                // IndieAuth.com does not yet honor the Accept header, this can
-                // all go away when it does...
                 $verifyResponse = $this->client->send($verifyRequest);
-                $contentType = $verifyResponse->getHeader('Content-Type');
-                if (0 === strpos($contentType, 'application/json')) {
-                    $verifyData = $verifyResponse->json();
-                } elseif (0 === strpos($contentType, 'application/x-www-form-urlencoded')) {
-                    $verifyData = array();
-                    $responseBody = (string) $verifyResponse->getBody();
-
-                    parse_str((string) $verifyResponse->getBody(), $verifyData);
-                } else {
+                if (false === strpos($verifyResponse->getHeader('Content-Type'), 'application/json')) {
                     throw new RuntimeException('invalid content type from verify endpoint');
                 }
+                $verifyData = $verifyResponse->json();
                 
                 if (!array_key_exists('me', $verifyData)) {
                     throw new RuntimeException('me field not found in verify response');
                 }
+                if ($authSession['me'] !== $verifyData['me']) {
+                    throw new RuntimeException('verified me value is different from expected value');
+                }
 
                 $this->session->setValue('me', $verifyData['me']);
+                $this->session->deleteKey('auth');
 
-                return new RedirectResponse($redirectTo, 302);
+                return new RedirectResponse($authSession['redirect_to'], 302);
             },
             array(
                 'skipPlugins' => array(
@@ -257,7 +259,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
         if (null === $me) {
             throw new BadRequestException('missing parameter "me"');
         }
-        if (0 !== strpos($me, 'http')) {
+        if (0 !== stripos($me, 'http')) {
             $me = sprintf('https://%s', $me);
         }
         try {
@@ -271,12 +273,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             if (null !== $uriObj->getFragment()) {
                 throw new BadRequestException('"me" cannot contain fragment');
             }
-            // if we have no path add '/'
-            if (null === $uriObj->getPath()) {
-                $me .= '/';
-            }
-            
-            return $me;
+            return $uriObj->getUri();
         } catch (InvalidArgumentException $e) {
             throw new BadRequestException('"me" is an invalid uri');
         }
@@ -299,7 +296,6 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 $rel = $element->getAttribute('rel');
                 if ('authorization_endpoint' === $rel) {
                     return $element->getAttribute('href');
-                    ;
                 }
             }
         }

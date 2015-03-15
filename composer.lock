@@ -45,16 +45,16 @@
         },
         {
             "name": "fkooman/rest",
-            "version": "0.7.1",
+            "version": "0.7.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fkooman/php-lib-rest.git",
-                "reference": "53d516d9e2ab9a28e8fde02e31960d11cdb9ac9c"
+                "reference": "cd0420d12c472c119ece4b13a561eeceba3771a3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/53d516d9e2ab9a28e8fde02e31960d11cdb9ac9c",
-                "reference": "53d516d9e2ab9a28e8fde02e31960d11cdb9ac9c",
+                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/cd0420d12c472c119ece4b13a561eeceba3771a3",
+                "reference": "cd0420d12c472c119ece4b13a561eeceba3771a3",
                 "shasum": ""
             },
             "require": {
@@ -64,8 +64,9 @@
             "suggest": {
                 "fkooman/rest-plugin-basic": "Basic Authentication plugin",
                 "fkooman/rest-plugin-bearer": "Bearer (OAuth) Authentication plugin",
-                "fkooman/rest-plugin-indiecert": "IndieCert Authentication plugin",
-                "fkooman/rest-plugin-mellon": "Mellon (SAML) Authentication plugin"
+                "fkooman/rest-plugin-indieauth": "IndieAuth Authentication plugin",
+                "fkooman/rest-plugin-mellon": "Mellon (SAML) Authentication plugin",
+                "fkooman/rest-plugin-simplesaml": "simpleSAMLphp (SAML) Authentication plugin"
             },
             "type": "library",
             "autoload": {
@@ -86,7 +87,7 @@
                 }
             ],
             "description": "Simple PHP library for writing REST services.",
-            "time": "2015-03-10 12:48:40"
+            "time": "2015-03-15 12:05:04"
         },
         {
             "name": "guzzlehttp/guzzle",

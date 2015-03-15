@@ -161,7 +161,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('getValue')->willReturn('54321abcdef');
+        $sessionStub->method('getValue')->willReturn(array('state' => '54321abcdef'));
 
         $service = new Service();
 
@@ -182,12 +182,12 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->disableOriginalConstructor()
                      ->getMock();
         $map = array(
-            array('state', '12345abcdef'),
-            array('redirect_uri', 'http://www.example.org/indieauth/callback'),
-            array('redirect_to', 'http://www.example.org/'),
-            array('auth_uri', 'https://indiefoo.net/auth')
+            'state' => '12345abcdef',
+            'redirect_to' => 'http://www.example.org/',
+            'auth_uri' => 'https://indiefoo.net/auth',
+            'me' => 'https://mydomain.org/'
         );
-        $sessionStub->method('getValue')->will($this->returnValueMap($map));
+        $sessionStub->method('getValue')->willReturn($map);
 
         $client = new Client();
         $mock = new Mock(
