@@ -55,7 +55,10 @@ try {
     $service->get(
         '/success',
         function (UserInfo $u) {
-            return sprintf('<html><head></head><body><h1>Hello</h1><p>Hello %s</p></body></html>', $u->getUserId());
+            return sprintf(
+                '<html><head></head><body><h1>Hello</h1><p>Hello %s</p></body></html>',
+                $u->getUserId()
+            );
         }
     );
 
