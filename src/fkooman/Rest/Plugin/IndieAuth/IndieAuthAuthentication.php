@@ -189,6 +189,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
                             'client_id' => $request->getAbsRoot(),
+                            // https://github.com/aaronpk/IndieAuth.com/issues/81
+                            // "state parameter required on verify POST"
+                            'state' => $queryState,
                             'code' => $queryCode,
                             'redirect_uri' => $request->getAbsRoot() . 'indieauth/callback'
                         )
