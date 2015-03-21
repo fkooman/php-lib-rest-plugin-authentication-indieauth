@@ -27,10 +27,12 @@ try {
     $service = new Service();
     $service->setDefaultRoute('/welcome');
 
-    // use https://indiecert.net/auth
+    // use discovery by default, fall back to IndieCert (https://indiecert.net/auth)
+    // redirect to '/success' after authentication
     $indieAuth = new IndieAuthAuthentication('/success');
 
-    // use IndieAuth
+    // use discovery by default, fall back to IndieAuth (https://indieauth.com/auth)
+    // redirect to '/success' after authentication
     //$indieAuth = new IndieAuthAuthentication('/success', 'https://indieauth.com/auth');
 
     // disable discovery (i.e. "Distributed IndieAuth")
@@ -52,6 +54,7 @@ try {
         )
     );
 
+    // To view the "success" page, authentication is required
     $service->get(
         '/success',
         function (UserInfo $u) {
