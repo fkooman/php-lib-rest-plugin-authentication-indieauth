@@ -19,7 +19,7 @@ Provides:   php-composer(%{composer_vendor}/%{composer_project}) = %{version}
 
 Requires:   php >= 5.3.3
 
-Requires:   php-composer(fkooman/rest) >= 0.7.4
+Requires:   php-composer(fkooman/rest) >= 0.7.5
 Requires:   php-composer(fkooman/rest) < 0.8.0
 
 %description
