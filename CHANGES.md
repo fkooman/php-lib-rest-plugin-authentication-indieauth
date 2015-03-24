@@ -1,5 +1,8 @@
 # Release History
 
+## 0.2.1
+- update dependencies and spec file
+
 ## 0.2.0
 - implement logout support
 - add CSRF protection for auth and logout endpoints
