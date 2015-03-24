@@ -7,7 +7,8 @@ See `example/indieauth.php` for an example on how to use this in your
 application.
 
 # API
-The plugin works by registering three endpoints under `/indieauth`:
+The plugin works by registering three endpoints under `/indieauth` in the 
+`fkooman/rest` framework:
 
 * `/indieauth/auth` 
 * `/indieauth/callback`
@@ -17,24 +18,30 @@ So if your application is running under `https://www.example.org/foo`, the
 `/indieauth/auth` endpoint becomes 
 `https://www.example.org/foo/indieauth/auth`.
 
+## Authentication
 The `/indieauth/auth` endpoint accepts a `POST` containing the `me` parameter 
-with the user's homepage. It can be used for example from the app by showing 
-the user a form to authenticate:
+with the URL to the user's homepage and the optionally the `redirect_to` 
+parameter. If the `redirect_to` field is missing the browser will redirect back 
+to the application root.
+
+So for example to ask the user for their home page and redirecting
+them to `https://www.example.org/foo/profile` after successful authentication
+you can use the following `<form>`:
 
     <form method="post" action="indieauth/auth">
         https://<input type="text" name="me" placeholder="example.org" required>
+        <input type="hidden" name="redirect_to" value="/profile">
         <input type="submit" value="Sign In">
     </form>
 
-The `/indieauth/auth` endpoint will take care of validating the URL, 
-determining "Distributed IndieAuth" support and normalizing the URL: 
-adding `https://` to the start if needed, adding a default path `/` if it is 
-missing or converting the host part to lowercase.
+The POST to the `/indieauth/auth` endpoint will take care of validating and
+normalizing the provided URL and determining "Distributed IndieAuth" support.
 
-Then it will talk to the IndieAuth compatible server and redirect the browser
-to `/indieauth/callback` where the token is received and validated. 
+The callback will take care of receiving the authentication code from the 
+IndieAuth service and validating it. Then it will redirect the browser back to
+`redirect_to`. Nothing needs to be configured for that.
 
-Next the browser is redirected to the location specified in the contructor 
-when loading the `IndieAuthAuthentication` class. See the example for more 
-information. Soon this will be moved to the form POST, and not the constructor.
-
+## Logout
+You can redirect the browser to `/indieauth/logout` to log out of the session. 
+An optional query parameter `redirect_to` can be used to redirect to a specific
+URL. If it is omitted the browser is redirected to the application root.

@@ -1,9 +1,13 @@
 # Release History
 
-## 0.1.4
+## 0.2.0
 - implement logout support
 - add CSRF protection for auth and logout endpoints
 - update `fkooman/rest`
+- **BREAKING**: uniform redirectTo support, `redirect_to` is now set in post to 
+  `indieauth/auth` and no longer through `IndieAuthAuthentication` constructor. 
+  For logout the query parameter `redirect_to` is used
+- validate and normalize the `redirect_to` URL
 
 ## 0.1.3
 - support `application/x-www-form-urlencoded` response to verify request again

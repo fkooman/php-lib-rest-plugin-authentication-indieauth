@@ -36,9 +36,6 @@ use RuntimeException;
 class IndieAuthAuthentication implements ServicePluginInterface
 {
     /** @var string */
-    private $redirectTo;
-
-    /** @var string */
     private $authUri;
 
     /** @var boolean */
@@ -53,9 +50,8 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var fkooman\Rest\Plugin\IndieAuth\IO */
     private $io;
 
-    public function __construct($redirectTo = null, $authUri = null)
+    public function __construct($authUri = null)
     {
-        $this->redirectTo = $redirectTo;
         if (null === $authUri) {
             $authUri = 'https://indiecert.net/auth';
         }
@@ -129,29 +125,14 @@ class IndieAuthAuthentication implements ServicePluginInterface
 
                 $clientId = $request->getAbsRoot();
                 $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
-
-                if (null === $this->redirectTo) {
-                    // no redirectTo specifed, use HTTP_REFERER
-                    $referrer = $request->getHeader('HTTP_REFERER');
-                    if (0 !== strpos($referrer, $request->getAbsRoot())) {
-                        throw new BadRequestException('referrer URL wants to redirect outside application');
-                    }
-                    $this->redirectTo = $referrer;
-                } else {
-                    // redirectTo specified, check if it is relative or absolute
-                    if (0 === strpos($this->redirectTo, '/')) {
-                        // assume URI relative to absRoot
-                        $this->redirectTo = $request->getAbsRoot() . substr($this->redirectTo, 1);
-                    }
-                }
-
                 $stateValue = $this->io->getRandomHex();
+                $redirectTo = $this->validateRedirectTo($request, $request->getPostParameter('redirect_to'));
 
                 $authSession = array(
                     'auth_uri' => $this->authUri,
                     'me' => $me,
                     'state' => $stateValue,
-                    'redirect_to' => $this->redirectTo
+                    'redirect_to' => $redirectTo
                 );
                 $this->session->setValue('auth', $authSession);
 
@@ -240,15 +221,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
 
                 $this->session->destroy();
-                $redirectTo = $request->getQueryParameter('redirect_to');
-                if (null === $redirectTo) {
-                    $redirectTo = $request->getAbsRoot();
-                } else {
-                    if (0 === strpos($redirectTo, '/')) {
-                        // assume URI relative to absRoot
-                        $redirectTo = $request->getAbsRoot() . substr($redirectTo, 1);
-                    }
-                }
+                $redirectTo = $this->validateRedirectTo($request, $request->getQueryParameter('redirect_to'));
 
                 return new RedirectResponse($redirectTo, 302);
             },
@@ -292,6 +265,34 @@ class IndieAuthAuthentication implements ServicePluginInterface
         }
 
         return $code;
+    }
+
+    private function validateRedirectTo(Request $request, $redirectTo)
+    {
+        // no redirectTo specified
+        if (null === $redirectTo) {
+            $redirectTo = $request->getAbsRoot();
+        }
+
+        // redirectTo specified, using path relative to absRoot
+        if (0 === strpos($redirectTo, '/')) {
+            $redirectTo = $request->getAbsRoot() . substr($redirectTo, 1);
+        }
+
+        // validate and normalize the URL
+        try {
+            $redirectToObj = new Uri($redirectTo);
+            $redirectTo = $redirectToObj->getUri();
+        } catch (InvalidArgumentException $e) {
+            throw new BadRequestException('invalid redirect_to URL');
+        }
+
+        // URL needs to start with absRoot
+        if (0 !== strpos($redirectTo, $request->getAbsRoot())) {
+            throw new BadRequestException('redirect_to needs to point to a URL relative to the application root');
+        }
+        
+        return $redirectTo;
     }
 
     private function validateMe($me)
