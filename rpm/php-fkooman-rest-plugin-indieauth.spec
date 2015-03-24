@@ -17,10 +17,12 @@ BuildArch:  noarch
 
 Provides:   php-composer(%{composer_vendor}/%{composer_project}) = %{version}
 
-Requires:   php >= 5.3.3
+Requires:   php >= 5.4
 
 Requires:   php-composer(fkooman/rest) >= 0.7.5
 Requires:   php-composer(fkooman/rest) < 0.8.0
+Requires:   php-composer(guzzlehttp/guzzle) >= 4.0
+Requires:   php-composer(guzzlehttp/guzzle) < 5.0
 
 %description
 Library written in PHP to make it easy to develop REST applications.

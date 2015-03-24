@@ -18,6 +18,6 @@
         "ext-openssl": "*",
         "fkooman/rest": "~0.7.5",
         "guzzlehttp/guzzle": "~4.0",
-        "php": ">=5.3.3"
+        "php": ">=5.4.0"
     }
 }
