@@ -98,6 +98,11 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $service->post(
             '/indieauth/auth',
             function (Request $request) {
+                // HTTP_REFERER needs to start with absRoot, CSRF protection
+                if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
+                    throw new BadRequestException('request MUST come from the application');
+                }
+
                 $this->session->deleteKey('me');
                 $this->session->deleteKey('auth');
 
@@ -229,6 +234,11 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $service->get(
             '/indieauth/logout',
             function (Request $request) {
+                // HTTP_REFERER needs to start with absRoot, CSRF protection
+                if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
+                    throw new BadRequestException('request MUST come from the application');
+                }
+
                 $this->session->destroy();
                 $redirectTo = $request->getQueryParameter('redirect_to');
                 if (null === $redirectTo) {
