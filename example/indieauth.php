@@ -44,7 +44,7 @@ try {
         '/welcome',
         function (Request $request) {
             // Show Sign In form;  POST to 'indieauth/auth' endpoint which is registered by the IndieAuth plugin
-            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indieauth/auth">https://<input type="text" name="me" placeholder="example.org"><input type="submit" value="Sign In"></form></body></html>';
+            return '<html><head></head><body><h1>Sign In</h1><form method="post" action="indieauth/auth">https://<input type="text" name="me" placeholder="example.org" required><input type="submit" value="Sign In"></form></body></html>';
         },
         array(
             // To view the "welcome" page, no authentication is required
