@@ -1,5 +1,8 @@
 # Release History
 
+## 0.1.4
+- implement logout support
+
 ## 0.1.3
 - support `application/x-www-form-urlencoded` response to verify request again
 

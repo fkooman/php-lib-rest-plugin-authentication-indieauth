@@ -59,7 +59,7 @@ try {
         '/success',
         function (UserInfo $u) {
             return sprintf(
-                '<html><head></head><body><h1>Hello</h1><p>Hello %s</p></body></html>',
+                '<html><head></head><body><h1>Hello</h1><p>Hello %s</p><p><a href="indieauth/logout?redirect_to=/welcome">logout</a></p></body></html>',
                 $u->getUserId()
             );
         }

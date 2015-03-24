@@ -225,6 +225,29 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 )
             )
         );
+
+        $service->get(
+            '/indieauth/logout',
+            function (Request $request) {
+                $this->session->destroy();
+                $redirectTo = $request->getQueryParameter('redirect_to');
+                if (null === $redirectTo) {
+                    $redirectTo = $request->getAbsRoot();
+                } else {
+                    if (0 === strpos($redirectTo, '/')) {
+                        // assume URI relative to absRoot
+                        $redirectTo = $request->getAbsRoot() . substr($redirectTo, 1);
+                    }
+                }
+
+                return new RedirectResponse($redirectTo, 302);
+            },
+            array(
+                'skipPlugins' => array(
+                    __CLASS__
+                )
+            )
+        );
     }
 
     public function execute(Request $request)
