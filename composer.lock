@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "37ce2bd0bbee31c0b8800aacfadddd99",
+    "hash": "fcf50534b8ea86a75379c0c37fd3f289",
     "packages": [
         {
             "name": "fkooman/json",
@@ -45,16 +45,16 @@
         },
         {
             "name": "fkooman/rest",
-            "version": "0.7.5",
+            "version": "0.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fkooman/php-lib-rest.git",
-                "reference": "0432d7922fcc6b51940155bf583bd0bc7fcc55aa"
+                "reference": "8cd11d4863f057883ac7009dc8024e609ba13ef6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/0432d7922fcc6b51940155bf583bd0bc7fcc55aa",
-                "reference": "0432d7922fcc6b51940155bf583bd0bc7fcc55aa",
+                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/8cd11d4863f057883ac7009dc8024e609ba13ef6",
+                "reference": "8cd11d4863f057883ac7009dc8024e609ba13ef6",
                 "shasum": ""
             },
             "require": {
@@ -87,7 +87,7 @@
                 }
             ],
             "description": "Simple PHP library for writing REST services.",
-            "time": "2015-03-24 13:32:40"
+            "time": "2015-04-12 14:03:08"
         },
         {
             "name": "guzzlehttp/guzzle",

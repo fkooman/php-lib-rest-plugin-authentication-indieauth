@@ -233,10 +233,17 @@ class IndieAuthAuthentication implements ServicePluginInterface
         );
     }
 
-    public function execute(Request $request)
+    public function execute(Request $request, array $routeConfig)
     {
         $userId = $this->session->getValue('me');
         if (null === $userId) {
+            // check if authentication is required...
+            if (array_key_exists('requireAuth', $routeConfig)) {
+                if (!$routeConfig['requireAuth']) {
+                    return false;
+                }
+            }
+
             throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieAuth');
         }
 

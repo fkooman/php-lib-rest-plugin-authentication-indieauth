@@ -45,7 +45,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth = new IndieAuthAuthentication();
         $indieAuthAuth->setSession($sessionStub);
         $indieAuthAuth->init(new Service());
-        $userInfo = $indieAuthAuth->execute($request);
+        $userInfo = $indieAuthAuth->execute($request, array());
         $this->assertEquals('https://mydomain.org/', $userInfo->getUserId());
     }
 
@@ -66,7 +66,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->setSession($sessionStub);
 
         $indieAuthAuth->init(new Service());
-        $indieAuthAuth->execute($request);
+        $indieAuthAuth->execute($request, array());
     }
 
     public function testIndieAuthAuthRequest()
