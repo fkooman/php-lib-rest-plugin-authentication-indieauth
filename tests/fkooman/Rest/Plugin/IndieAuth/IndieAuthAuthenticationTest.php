@@ -126,7 +126,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException fkooman\Http\Exception\BadRequestException
-     * @expectedExceptionMessage missing parameter "state"
+     * @expectedExceptionMessage no session available
      */
     public function testIndieAuthCallbackNoSessionState()
     {

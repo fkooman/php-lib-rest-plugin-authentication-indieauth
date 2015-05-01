@@ -36,6 +36,7 @@ try {
     $client = new Client(
         array(
             'defaults' => array(
+        // DO NOT set 'verify => false' in actual deployments!
                 'verify' => false,
                 'timeout' => 10
             )

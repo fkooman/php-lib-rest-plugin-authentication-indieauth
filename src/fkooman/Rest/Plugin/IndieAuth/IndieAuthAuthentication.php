@@ -114,6 +114,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 $this->session->deleteKey('me');
                 $this->session->deleteKey('access_token');
                 $this->session->deleteKey('scope');
+
                 $this->session->deleteKey('auth');
 
                 $me = InputValidation::validateMe($request->getPostParameter('me'));
@@ -179,6 +180,10 @@ class IndieAuthAuthentication implements ServicePluginInterface
             '/indieauth/callback',
             function (Request $request) {
                 $authSession = $this->session->getValue('auth');
+
+                if (!is_array($authSession)) {
+                    throw new BadRequestException('no session available');
+                }
 
                 $queryState = InputValidation::validateState($request->getQueryParameter('state'));
                 $queryCode = InputValidation::validateCode($request->getQueryParameter('code'));
