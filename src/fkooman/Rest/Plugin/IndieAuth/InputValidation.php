@@ -102,20 +102,35 @@ class InputValidation
 
     public static function validateScope($scope)
     {
-        return $scope;
+        // allow no scope as well
+        if (null === $scope) {
+            return null;
+        }
 
-#        // allow scope to be missing
-#        if (null === $scope) {
-#            return null;
-#        }
+        if (!is_string($scope)) {
+            throw new BadRequestException('scope must be string');
+        }
 
-#        // but if it is there, it needs to be a valid scope and also
-#        // 'normalized'
-#        try {
-#            $scopeObj = new Scope($scope);
-#            return $scopeObj->toString();
-#        } catch(InvalidArgumentException $e) {
-#            throw new BadRequestException('"scope" is invalid', $e->getMessage());
-#        }
+        if (0 >= strlen($scope)) {
+            throw new BadRequestException('scope must not be empty');
+        }
+
+        $scopeTokens = explode(' ', $scope);
+        foreach ($scopeTokens as $token) {
+            InputValidation::validateScopeToken($token);
+        }
+        sort($scopeTokens, SORT_STRING);
+
+        return implode(' ', array_values(array_unique($scopeTokens, SORT_STRING)));
+    }
+
+    private static function validateScopeToken($scopeToken)
+    {
+        if (!is_string($scopeToken) || 0 >= strlen($scopeToken)) {
+            throw new BadRequestException('scope token must be a non-empty string');
+        }
+        if (1 !== preg_match('/^(?:\x21|[\x23-\x5B]|[\x5D-\x7E])+$/', $scopeToken)) {
+            throw new BadRequestException('invalid characters in scope token');
+        }
     }
 }
