@@ -323,8 +323,15 @@ class IndieAuthAuthentication implements ServicePluginInterface
 
             if (null !== $this->unauthorizedRedirectUri) {
                 $redirectTo = $this->validateRedirectTo($request, $this->unauthorizedRedirectUri);
-
-                return new RedirectResponse($redirectTo, 302);
+                return new RedirectResponse(
+                    sprintf(
+                        '%s?redirect_to=%s',
+                        $redirectTo,
+                        // FIXME: do we need to remove query/fragment?
+                        $request->getRequestUri()->getUri()
+                    ),
+                    302
+                );
             }
 
             throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieAuth');
