@@ -120,7 +120,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 if ($this->discoveryEnabled) {
                     $pageFetcher = new PageFetcher($this->client);
                     $pageResponse = $pageFetcher->fetch($me);
-                    $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
+                    $authUri = $this->extractAuthorizeEndpoint($pageResponse);
                     if (null !== $authUri) {
                         try {
                             $authUriObj = new Uri($authUri);
@@ -132,7 +132,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                             throw new RuntimeException('authorization_endpoint must be a valid URL');
                         }
                     }
-                    $tokenUri = $this->extractTokenEndpoint($pageResponse->getBody());
+                    $tokenUri = $this->extractTokenEndpoint($pageResponse);
                     // FIXME: url checking code duplication!
                     if (null !== $tokenUri) {
                         try {
