@@ -40,6 +40,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var string */
     private $tokenUri;
 
+    /** @var string */
+    private $unauthorizedRedirectUri;
+
     /** @var boolean */
     private $discoveryEnabled;
 
@@ -113,44 +116,25 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 $this->session->deleteKey('scope');
                 $this->session->deleteKey('auth');
 
-                $me = $this->validateMe($request->getPostParameter('me'));
-                $scope = $this->validateScope($request->getPostParameter('scope'));
+                $me = InputValidation::validateMe($request->getPostParameter('me'));
+                $scope = InputValidation::validateScope($request->getPostParameter('scope'));
 
-                // if discovery is enabled, we try find the authorization_endpoint
+                // if discovery is enabled, we try find the authUri and tokenUri
                 if ($this->discoveryEnabled) {
-                    $pageFetcher = new PageFetcher($this->client);
-                    $pageResponse = $pageFetcher->fetch($me);
-                    $authUri = $this->extractAuthorizeEndpoint($pageResponse);
-                    if (null !== $authUri) {
-                        try {
-                            $authUriObj = new Uri($authUri);
-                            if ('https' !== $authUriObj->getScheme()) {
-                                throw new RuntimeException('authorization_endpoint must be a valid https URL');
-                            }
-                            $this->authUri = $authUriObj->getUri();
-                        } catch (InvalidArgumentException $e) {
-                            throw new RuntimeException('authorization_endpoint must be a valid URL');
-                        }
+                    $discovery = new Discovery($this->client);
+                    $discoveryResponse = $discovery->discover($me);
+                    if (null !== $discoveryResponse->getAuthorizationEndpoint()) {
+                        $this->authUri = $discoveryResponse->getAuthorizationEndpoint();
                     }
-                    $tokenUri = $this->extractTokenEndpoint($pageResponse);
-                    // FIXME: url checking code duplication!
-                    if (null !== $tokenUri) {
-                        try {
-                            $tokenUriObj = new Uri($tokenUri);
-                            if ('https' !== $tokenUriObj->getScheme()) {
-                                throw new RuntimeException('token_endpoint must be a valid https URL');
-                            }
-                            $this->tokenUri = $tokenUriObj->getUri();
-                        } catch (InvalidArgumentException $e) {
-                            throw new RuntimeException('token_endpoint must be a valid URL');
-                        }
+                    if (null !== $discoveryResponse->getTokenEndpoint()) {
+                        $this->tokenUri = $discoveryResponse->getTokenEndpoint();
                     }
                 }
 
                 $clientId = $request->getAbsRoot();
                 $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
                 $stateValue = $this->io->getRandomHex();
-                $redirectTo = $this->validateRedirectTo($request, $request->getPostParameter('redirect_to'));
+                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $request->getPostParameter('redirect_to'));
 
                 $authSession = array(
                     'auth_uri' => $this->authUri,
@@ -196,8 +180,8 @@ class IndieAuthAuthentication implements ServicePluginInterface
             function (Request $request) {
                 $authSession = $this->session->getValue('auth');
 
-                $queryState = $this->validateState($request->getQueryParameter('state'));
-                $queryCode = $this->validateCode($request->getQueryParameter('code'));
+                $queryState = InputValidation::validateState($request->getQueryParameter('state'));
+                $queryCode = InputValidation::validateCode($request->getQueryParameter('code'));
 
                 if (null === $authSession['state']) {
                     throw new BadRequestException('no session state available');
@@ -295,7 +279,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
 
                 $this->session->destroy();
-                $redirectTo = $this->validateRedirectTo($request, $request->getQueryParameter('redirect_to'));
+                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $request->getQueryParameter('redirect_to'));
 
                 return new RedirectResponse($redirectTo, 302);
             },
@@ -322,7 +306,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             }
 
             if (null !== $this->unauthorizedRedirectUri) {
-                $redirectTo = $this->validateRedirectTo($request, $this->unauthorizedRedirectUri);
+                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $this->unauthorizedRedirectUri);
                 return new RedirectResponse(
                     sprintf(
                         '%s?redirect_to=%s',
@@ -338,150 +322,6 @@ class IndieAuthAuthentication implements ServicePluginInterface
         }
 
         return new IndieInfo($userId, $accessToken, $scope);
-    }
-
-    private function validateState($state)
-    {
-        if (null === $state) {
-            throw new BadRequestException('missing parameter "state"');
-        }
-        if (1 !== preg_match('/^(?:[\x20-\x7E])*$/', $state)) {
-            throw new BadRequestException('"state" contains invalid characters');
-        }
-
-        return $state;
-    }
-
-    private function validateCode($code)
-    {
-        if (null === $code) {
-            throw new BadRequestException('missing parameter "code"');
-        }
-        if (1 !== preg_match('/^(?:[\x20-\x7E])*$/', $code)) {
-            throw new BadRequestException('"code" contains invalid characters');
-        }
-
-        return $code;
-    }
-
-    private function validateRedirectTo(Request $request, $redirectTo)
-    {
-        // no redirectTo specified
-        if (null === $redirectTo) {
-            $redirectTo = $request->getAbsRoot();
-        }
-
-        // redirectTo specified, using path relative to absRoot
-        if (0 === strpos($redirectTo, '/')) {
-            $redirectTo = $request->getAbsRoot() . substr($redirectTo, 1);
-        }
-
-        // validate and normalize the URL
-        try {
-            $redirectToObj = new Uri($redirectTo);
-            $redirectTo = $redirectToObj->getUri();
-        } catch (InvalidArgumentException $e) {
-            throw new BadRequestException('invalid redirect_to URL');
-        }
-
-        // URL needs to start with absRoot
-        if (0 !== strpos($redirectTo, $request->getAbsRoot())) {
-            throw new BadRequestException('redirect_to needs to point to a URL relative to the application root');
-        }
-        
-        return $redirectTo;
-    }
-
-    private function validateMe($me)
-    {
-        if (null === $me) {
-            throw new BadRequestException('missing parameter "me"');
-        }
-        if (0 !== stripos($me, 'http')) {
-            $me = sprintf('https://%s', $me);
-        }
-        try {
-            $uriObj = new Uri($me);
-            if ('https' !== $uriObj->getScheme()) {
-                throw new BadRequestException('"me" must be https uri');
-            }
-            if (null !== $uriObj->getQuery()) {
-                throw new BadRequestException('"me" cannot contain query parameters');
-            }
-            if (null !== $uriObj->getFragment()) {
-                throw new BadRequestException('"me" cannot contain fragment');
-            }
-            return $uriObj->getUri();
-        } catch (InvalidArgumentException $e) {
-            throw new BadRequestException('"me" is an invalid uri');
-        }
-    }
-
-    private function validateScope($scope)
-    {
-        return $scope;
-
-#        // allow scope to be missing
-#        if (null === $scope) {
-#            return null;
-#        }
-
-#        // but if it is there, it needs to be a valid scope and also
-#        // 'normalized'
-#        try {
-#            $scopeObj = new Scope($scope);
-#            return $scopeObj->toString();
-#        } catch(InvalidArgumentException $e) {
-#            throw new BadRequestException('"scope" is invalid', $e->getMessage());
-#        }
-    }
-
-    private function extractAuthorizeEndpoint($htmlString)
-    {
-        $relLinks = $this->extractRelLinks($htmlString);
-        foreach ($relLinks as $key => $value) {
-            if ('authorization_endpoint' === $key) {
-                return $value;
-            }
-        }
-        return null;
-    }
-
-    private function extractTokenEndpoint($htmlString)
-    {
-        $relLinks = $this->extractRelLinks($htmlString);
-        foreach ($relLinks as $key => $value) {
-            if ('token_endpoint' === $key) {
-                return $value;
-            }
-        }
-        return null;
-    }
-    
-    // FIXME: this method is now called twice, invoking the dom parser twice,
-    // inefficient!
-    private function extractRelLinks($htmlString)
-    {
-        $dom = new DomDocument();
-        // disable error handling by DomDocument so we handle them ourselves
-        libxml_use_internal_errors(true);
-        $dom->loadHTML($htmlString);
-        // throw away all errors, we do not care about them anyway
-        libxml_clear_errors();
-
-        $tags = array('link', 'a');
-        $relLinks = array();
-        foreach ($tags as $tag) {
-            $elements = $dom->getElementsByTagName($tag);
-            foreach ($elements as $element) {
-                $rel = $element->getAttribute('rel');
-                if (null !== $rel) {
-                    $relLinks[$rel] = $element->getAttribute('href');
-                }
-            }
-        }
-
-        return $relLinks;
     }
 
     private function decodeResponse(Response $response)
