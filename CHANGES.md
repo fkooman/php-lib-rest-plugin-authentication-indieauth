@@ -1,5 +1,15 @@
 # Release History
 
+## 0.3.0
+- support redirecting to authentication page when not authenticated instead 
+  of showing error page
+- support requesting `scope`, and thus `access_token` from the IndieAuth 
+  instance.
+- **BREAKING**: user (and `access_token`) information is now returned in 
+  `IndieInfo` object instead of `UserInfo` object to accommodate for the 
+  `access_token`.
+- add an example to also request `scope` and `access_token`
+
 ## 0.2.2
 - update to latest `fkooman/rest` to support optional authentication
 

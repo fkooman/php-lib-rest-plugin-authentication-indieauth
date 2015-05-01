@@ -99,7 +99,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/data/fkooman.html')
+                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))) . '/data/fkooman.html')
                     )
                 )
             )
@@ -120,7 +120,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $response = $service->run($request);
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals(
-            'https://indiecert.net/auth?client_id=http://www.example.org/&me=https://mydomain.org/&redirect_uri=http://www.example.org/indieauth/callback&state=12345abcdef',
+            'https://indiecert.net/auth?client_id=http%3A%2F%2Fwww.example.org%2F&me=https%3A%2F%2Fmydomain.org%2F&redirect_uri=http%3A%2F%2Fwww.example.org%2Findieauth%2Fcallback&state=12345abcdef',
             $response->getHeader('Location')
         );
     }

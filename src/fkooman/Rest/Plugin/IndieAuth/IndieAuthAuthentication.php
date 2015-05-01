@@ -25,7 +25,6 @@ use fkooman\Http\RedirectResponse;
 use fkooman\Http\Exception\BadRequestException;
 use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\ServicePluginInterface;
-use fkooman\Rest\Plugin\UserInfo;
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\Response;
 use fkooman\Http\Uri;
@@ -37,6 +36,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
 {
     /** @var string */
     private $authUri;
+
+    /** @var string */
+    private $tokenUri;
 
     /** @var boolean */
     private $discoveryEnabled;
@@ -50,13 +52,20 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var fkooman\Rest\Plugin\IndieAuth\IO */
     private $io;
 
-    public function __construct($authUri = null)
+    public function __construct($authUri = null, $tokenUri = null)
     {
         if (null === $authUri) {
             $authUri = 'https://indiecert.net/auth';
         }
         $this->authUri = $authUri;
+        $this->tokenUri = $tokenUri;
+        $this->unauthorizedRedirectUri = null;
         $this->discoveryEnabled = true;
+    }
+
+    public function setUnauthorizedRedirectUri($unauthorizedRedirectUri)
+    {
+        $this->unauthorizedRedirectUri = $unauthorizedRedirectUri;
     }
 
     public function setDiscovery($discoveryEnabled)
@@ -100,15 +109,17 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
 
                 $this->session->deleteKey('me');
+                $this->session->deleteKey('access_token');
+                $this->session->deleteKey('scope');
                 $this->session->deleteKey('auth');
 
                 $me = $this->validateMe($request->getPostParameter('me'));
+                $scope = $this->validateScope($request->getPostParameter('scope'));
 
                 // if discovery is enabled, we try find the authorization_endpoint
                 if ($this->discoveryEnabled) {
                     $pageFetcher = new PageFetcher($this->client);
                     $pageResponse = $pageFetcher->fetch($me);
-                    //$expectedMe = $pageResponse->getEffectiveUrl();
                     $authUri = $this->extractAuthorizeEndpoint($pageResponse->getBody());
                     if (null !== $authUri) {
                         try {
@@ -121,6 +132,19 @@ class IndieAuthAuthentication implements ServicePluginInterface
                             throw new RuntimeException('authorization_endpoint must be a valid URL');
                         }
                     }
+                    $tokenUri = $this->extractTokenEndpoint($pageResponse->getBody());
+                    // FIXME: url checking code duplication!
+                    if (null !== $tokenUri) {
+                        try {
+                            $tokenUriObj = new Uri($tokenUri);
+                            if ('https' !== $tokenUriObj->getScheme()) {
+                                throw new RuntimeException('token_endpoint must be a valid https URL');
+                            }
+                            $this->tokenUri = $tokenUriObj->getUri();
+                        } catch (InvalidArgumentException $e) {
+                            throw new RuntimeException('token_endpoint must be a valid URL');
+                        }
+                    }
                 }
 
                 $clientId = $request->getAbsRoot();
@@ -130,19 +154,32 @@ class IndieAuthAuthentication implements ServicePluginInterface
 
                 $authSession = array(
                     'auth_uri' => $this->authUri,
+                    'token_uri' => $this->tokenUri,
                     'me' => $me,
                     'state' => $stateValue,
                     'redirect_to' => $redirectTo
                 );
+                if (null !== $scope) {
+                    $authSession['scope'] = $scope;
+                }
+
                 $this->session->setValue('auth', $authSession);
 
+                $authUriParams = array(
+                    'client_id' => $clientId,
+                    'me' => $me,
+                    'redirect_uri' => $redirectUri,
+                    'state' => $stateValue
+                );
+
+                if (null !== $scope) {
+                    $authUriParams['scope'] = $scope;
+                }
+    
                 $fullAuthUri = sprintf(
-                    '%s?client_id=%s&me=%s&redirect_uri=%s&state=%s',
+                    '%s?%s',
                     $this->authUri,
-                    $clientId,
-                    $me,
-                    $redirectUri,
-                    $stateValue
+                    http_build_query($authUriParams, '', '&')
                 );
 
                 return new RedirectResponse($fullAuthUri, 302);
@@ -199,8 +236,45 @@ class IndieAuthAuthentication implements ServicePluginInterface
                         )
                     );
                 }
-
                 $this->session->setValue('me', $responseData['me']);
+
+                // if we requested a scope, we also want an access token
+                if (array_key_exists('scope', $authSession) && null !== $authSession['scope']) {
+                    $verifyRequest = $this->client->createRequest(
+                        'POST',
+                        $authSession['token_uri'],
+                        array(
+                            'headers' => array('Accept' => 'application/json'),
+                            'body' => array(
+                                'client_id' => $request->getAbsRoot(),
+                                // https://github.com/aaronpk/IndieAuth.com/issues/81
+                                // "state parameter required on verify POST"
+                                'state' => $queryState,
+                                'code' => $queryCode,
+                                'redirect_uri' => $request->getAbsRoot() . 'indieauth/callback'
+                            )
+                        )
+                    );
+
+                    $responseData = $this->decodeResponse($this->client->send($verifyRequest));
+                    
+                    if (!is_array($responseData) || !array_key_exists('me', $responseData)) {
+                        throw new RuntimeException('me field not found in response');
+                    }
+
+                    if ($authSession['me'] !== $responseData['me']) {
+                        throw new RuntimeException(
+                            sprintf(
+                                'received "me" (%s) different from expected "me" (%s)',
+                                $responseData['me'],
+                                $authSession['me']
+                            )
+                        );
+                    }
+                    $this->session->setValue('access_token', $responseData['access_token']);
+                    $this->session->setValue('scope', $responseData['scope']);
+                }
+
                 $this->session->deleteKey('auth');
 
                 return new RedirectResponse($authSession['redirect_to'], 302);
@@ -236,6 +310,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
     public function execute(Request $request, array $routeConfig)
     {
         $userId = $this->session->getValue('me');
+        $accessToken = $this->session->getValue('access_token');
+        $scope = $this->session->getValue('scope');
+
         if (null === $userId) {
             // check if authentication is required...
             if (array_key_exists('requireAuth', $routeConfig)) {
@@ -244,10 +321,16 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
             }
 
+            if (null !== $this->unauthorizedRedirectUri) {
+                $redirectTo = $this->validateRedirectTo($request, $this->unauthorizedRedirectUri);
+
+                return new RedirectResponse($redirectTo, 302);
+            }
+
             throw new UnauthorizedException('not authenticated', 'no authenticated session', 'IndieAuth');
         }
 
-        return new UserInfo($userId);
+        return new IndieInfo($userId, $accessToken, $scope);
     }
 
     private function validateState($state)
@@ -327,7 +410,50 @@ class IndieAuthAuthentication implements ServicePluginInterface
         }
     }
 
+    private function validateScope($scope)
+    {
+        return $scope;
+
+#        // allow scope to be missing
+#        if (null === $scope) {
+#            return null;
+#        }
+
+#        // but if it is there, it needs to be a valid scope and also
+#        // 'normalized'
+#        try {
+#            $scopeObj = new Scope($scope);
+#            return $scopeObj->toString();
+#        } catch(InvalidArgumentException $e) {
+#            throw new BadRequestException('"scope" is invalid', $e->getMessage());
+#        }
+    }
+
     private function extractAuthorizeEndpoint($htmlString)
+    {
+        $relLinks = $this->extractRelLinks($htmlString);
+        foreach ($relLinks as $key => $value) {
+            if ('authorization_endpoint' === $key) {
+                return $value;
+            }
+        }
+        return null;
+    }
+
+    private function extractTokenEndpoint($htmlString)
+    {
+        $relLinks = $this->extractRelLinks($htmlString);
+        foreach ($relLinks as $key => $value) {
+            if ('token_endpoint' === $key) {
+                return $value;
+            }
+        }
+        return null;
+    }
+    
+    // FIXME: this method is now called twice, invoking the dom parser twice,
+    // inefficient!
+    private function extractRelLinks($htmlString)
     {
         $dom = new DomDocument();
         // disable error handling by DomDocument so we handle them ourselves
@@ -342,13 +468,13 @@ class IndieAuthAuthentication implements ServicePluginInterface
             $elements = $dom->getElementsByTagName($tag);
             foreach ($elements as $element) {
                 $rel = $element->getAttribute('rel');
-                if ('authorization_endpoint' === $rel) {
-                    return $element->getAttribute('href');
+                if (null !== $rel) {
+                    $relLinks[$rel] = $element->getAttribute('href');
                 }
             }
         }
 
-        return null;
+        return $relLinks;
     }
 
     private function decodeResponse(Response $response)
