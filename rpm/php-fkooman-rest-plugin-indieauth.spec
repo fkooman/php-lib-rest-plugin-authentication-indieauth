@@ -5,7 +5,7 @@
 %global github_name      php-lib-rest-plugin-indieauth
 
 Name:       php-%{composer_vendor}-%{composer_project}
-Version:    0.2.2
+Version:    0.3.0
 Release:    1%{?dist}
 Summary:    IndieAuth Authentication plugin for fkooman/rest
 
@@ -43,6 +43,9 @@ cp -pr src/* ${RPM_BUILD_ROOT}%{_datadir}/php
 %doc README.md CHANGES.md COPYING composer.json
 
 %changelog
+* Fri May 01 2015 François Kooman <fkooman@tuxed.net> - 0.3.0-1
+- update to 0.3.0
+
 * Sun Apr 12 2015 François Kooman <fkooman@tuxed.net> - 0.2.2-1
 - update to 0.2.2
 
