@@ -22,7 +22,8 @@ So if your application is running under `https://www.example.org/foo`, the
 The `/indieauth/auth` endpoint accepts a `POST` containing the `me` parameter 
 with the URL to the user's homepage and the optionally the `redirect_to` 
 parameter. If the `redirect_to` field is missing the browser will redirect back 
-to the application root.
+to the application root. You can also provide a `scope` parameter to request
+an access token.
 
 So for example to ask the user for their home page and redirecting
 them to `https://www.example.org/foo/profile` after successful authentication
@@ -35,13 +36,21 @@ you can use the following `<form>`:
     </form>
 
 The POST to the `/indieauth/auth` endpoint will take care of validating and
-normalizing the provided URL and determining "Distributed IndieAuth" support.
+normalizing the provided URL and determining "Distributed IndieAuth" support by
+performing discovery.
 
 The callback will take care of receiving the authentication code from the 
 IndieAuth service and validating it. Then it will redirect the browser back to
 `redirect_to`. Nothing needs to be configured for that.
 
 ## Logout
-You can redirect the browser to `/indieauth/logout` to log out of the session. 
-An optional query parameter `redirect_to` can be used to redirect to a specific
-URL. If it is omitted the browser is redirected to the application root.
+You can send a POST to `/indieauth/logout` to log out of the session. 
+An optional form parameter `redirect_to` can be used to redirect to a specific
+URL. If it is omitted the browser is redirected to the application root, 
+for example:
+
+    <form method="post" action="indieauth/logout">
+        <input type="hidden" name="redirect_to" value="/welcome">
+        <input type="submit" value="Logout">
+    </form>
+

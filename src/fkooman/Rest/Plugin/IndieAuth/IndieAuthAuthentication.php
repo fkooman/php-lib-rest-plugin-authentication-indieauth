@@ -107,6 +107,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
             '/indieauth/auth',
             function (Request $request) {
                 // HTTP_REFERER needs to start with absRoot, CSRF protection
+                // FIXME: this moved to fkooman/rest so no longer needed here
+                // if it is enabled in the application, leave it for now until
+                // the referrer check is the default option!
                 if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
                     throw new BadRequestException('request MUST come from the application');
                 }
@@ -275,10 +278,13 @@ class IndieAuthAuthentication implements ServicePluginInterface
             )
         );
 
-        $service->get(
+        $service->post(
             '/indieauth/logout',
             function (Request $request) {
                 // HTTP_REFERER needs to start with absRoot, CSRF protection
+                // FIXME: this moved to fkooman/rest so no longer needed here
+                // if it is enabled in the application, leave it for now until
+                // the referrer check is the default option!
                 if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
                     throw new BadRequestException('request MUST come from the application');
                 }
