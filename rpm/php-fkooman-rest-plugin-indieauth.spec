@@ -19,7 +19,7 @@ Provides:   php-composer(%{composer_vendor}/%{composer_project}) = %{version}
 
 Requires:   php >= 5.4
 
-Requires:   php-composer(fkooman/rest) >= 0.8.0
+Requires:   php-composer(fkooman/rest) >= 0.8.3
 Requires:   php-composer(fkooman/rest) < 0.9.0
 Requires:   php-composer(guzzlehttp/guzzle) >= 4.0
 Requires:   php-composer(guzzlehttp/guzzle) < 5.0
