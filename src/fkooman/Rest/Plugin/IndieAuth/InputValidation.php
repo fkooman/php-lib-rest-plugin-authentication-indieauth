@@ -14,12 +14,9 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace fkooman\Rest\Plugin\IndieAuth;
 
 use fkooman\Http\Exception\BadRequestException;
-use InvalidArgumentException;
-use fkooman\Http\Uri;
 
 class InputValidation
 {
@@ -47,31 +44,27 @@ class InputValidation
         return $code;
     }
 
-    public static function validateRedirectTo($absRoot, $redirectTo)
+    public static function validateRedirectTo($rootUrl, $redirectTo)
     {
         // no redirectTo specified
         if (null === $redirectTo) {
-            $redirectTo = $absRoot;
+            $redirectTo = $rootUrl;
         }
 
         // redirectTo specified, using path relative to absRoot
         if (0 === strpos($redirectTo, '/')) {
-            $redirectTo = $absRoot . substr($redirectTo, 1);
+            $redirectTo = $rootUrl.substr($redirectTo, 1);
         }
 
-        // validate and normalize the URL
-        try {
-            $redirectToObj = new Uri($redirectTo);
-            $redirectTo = $redirectToObj->getUri();
-        } catch (InvalidArgumentException $e) {
-            throw new BadRequestException('invalid redirect_to URL');
+        if (false === filter_var($redirectTo, FILTER_VALIDATE_URL)) { //, FILTER_FLAG_PATH_REQUIRED)) {
+            throw new BadRequestException(sprintf('invalid redirect_to URL "%s"', $redirectTo));
         }
 
         // URL needs to start with absRoot
-        if (0 !== strpos($redirectTo, $absRoot)) {
+        if (0 !== strpos($redirectTo, $rootUrl)) {
             throw new BadRequestException('redirect_to needs to point to a URL relative to the application root');
         }
-        
+
         return $redirectTo;
     }
 
@@ -83,28 +76,36 @@ class InputValidation
         if (0 !== stripos($me, 'http')) {
             $me = sprintf('https://%s', $me);
         }
-        try {
-            $uriObj = new Uri($me);
-            if ('https' !== $uriObj->getScheme()) {
-                throw new BadRequestException('"me" must be https uri');
-            }
-            if (null !== $uriObj->getQuery()) {
-                throw new BadRequestException('"me" cannot contain query parameters');
-            }
-            if (null !== $uriObj->getFragment()) {
-                throw new BadRequestException('"me" cannot contain fragment');
-            }
-            return $uriObj->getUri();
-        } catch (InvalidArgumentException $e) {
-            throw new BadRequestException('"me" is an invalid uri');
+
+        if (false === filter_var($me, FILTER_VALIDATE_URL)) {
+            throw new BadRequestException('"me" is an invalid URL');
         }
+
+        if ('https' !== parse_url($me, PHP_URL_SCHEME)) {
+            throw new BadRequestException('"me" MUST be a https URL');
+        }
+
+        if (null !== parse_url($me, PHP_URL_QUERY)) {
+            throw new BadRequestException('"me" MUST NOT contain query parameters');
+        }
+
+        if (null !== parse_url($me, PHP_URL_FRAGMENT)) {
+            throw new BadRequestException('"me" MUST NOT contain fragment');
+        }
+
+        // if no path is set, add '/'
+        if (null === parse_url($me, PHP_URL_PATH)) {
+            $me .= '/';
+        }
+
+        return $me;
     }
 
     public static function validateScope($scope)
     {
         // allow no scope as well
         if (null === $scope) {
-            return null;
+            return;
         }
 
         if (!is_string($scope)) {
@@ -117,7 +118,7 @@ class InputValidation
 
         $scopeTokens = explode(' ', $scope);
         foreach ($scopeTokens as $token) {
-            InputValidation::validateScopeToken($token);
+            self::validateScopeToken($token);
         }
         sort($scopeTokens, SORT_STRING);
 

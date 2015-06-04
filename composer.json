@@ -16,7 +16,7 @@
     "name": "fkooman/rest-plugin-indieauth",
     "require": {
         "ext-openssl": "*",
-        "fkooman/rest": "~0.8.3",
+        "fkooman/rest": "dev-develop",
         "guzzlehttp/guzzle": "~4.0",
         "php": ">=5.4.0"
     }

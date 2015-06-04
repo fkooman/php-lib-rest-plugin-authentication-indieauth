@@ -14,7 +14,6 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace fkooman\Rest\Plugin\IndieAuth;
 
 use GuzzleHttp\Client;
@@ -34,9 +33,9 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))) . '/data/fkooman.html')
+                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
                     )
-                )
+                ),
             )
         );
         $client->getEmitter()->attach($mock);
@@ -56,7 +55,7 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory('Hello World')
-                )
+                ),
             )
         );
         $client->getEmitter()->attach($mock);
@@ -79,7 +78,7 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     404,
                     array('Content-Type' => 'text/html'),
                     Stream::factory('Not Found')
-                )
+                ),
             )
         );
         $client->getEmitter()->attach($mock);
@@ -91,8 +90,8 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException DomainException
-     * @expectedExceptionMessage uri must be a valid https URL
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage URL must be a valid https URL
      */
     public function testDiscoveryNonHttpsMe()
     {

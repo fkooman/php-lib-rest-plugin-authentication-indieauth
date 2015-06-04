@@ -14,16 +14,14 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace fkooman\Rest\Plugin\IndieAuth;
 
+use DomDocument;
 use GuzzleHttp\Client;
-use DomainException;
-use RuntimeException;
-use fkooman\Http\Uri;
 use GuzzleHttp\Subscriber\History;
 use GuzzleHttp\Url;
-use DomDocument;
+use RuntimeException;
+use InvalidArgumentException;
 
 /**
  * Discover the user's "authorization_endpoint" and "token_endpoint" on their
@@ -40,7 +38,6 @@ class Discovery
             $client = new Client();
         }
         $this->client = $client;
-        $this->fetchCache = null;
     }
 
     /**
@@ -48,10 +45,8 @@ class Discovery
      */
     public function discover($me)
     {
-        $me = Discovery::validateUri($me);
-
-        $homePage = $this->fetchUri($me);
-
+        $me = self::validateUrl($me);
+        $homePage = $this->fetchUrl($me);
         $relLinks = $this->extractRelLinks($homePage);
 
         $authorizationEndpoint = $this->getLink($relLinks, 'authorization_endpoint');
@@ -71,14 +66,15 @@ class Discovery
     private function getLink(array $relLinks, $link)
     {
         if (array_key_exists($link, $relLinks)) {
-            $link = Discovery::validateUri($relLinks[$link]);
+            $link = self::validateUrl($relLinks[$link]);
+
             return $link;
         }
 
-        return null;
+        return;
     }
 
-    private function fetchUri($pageUri)
+    private function fetchUrl($pageUrl)
     {
         // we track all URLs on the redirect path (if any) and make sure none
         // of them redirect to a HTTP URL. Unfortunately Guzzle 3/4 can not do
@@ -87,7 +83,7 @@ class Discovery
         $history = new History();
         $this->client->getEmitter()->attach($history);
 
-        $request = $this->client->createRequest('GET', $pageUri);
+        $request = $this->client->createRequest('GET', $pageUrl);
         $response = $this->client->send($request);
 
         foreach ($history as $transaction) {
@@ -124,12 +120,15 @@ class Discovery
         return $relLinks;
     }
 
-    private function validateUri($uriStr)
+    private function validateUrl($urlStr)
     {
-        $uriObj = new Uri($uriStr);
-        if ('https' !== $uriObj->getScheme()) {
-            throw new DomainException('uri must be a valid https URL');
+        if (false === filter_var($urlStr, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException('invalid URL');
         }
-        return $uriObj->getUri();
+        if (0 !== stripos($urlStr, 'https://')) {
+            throw new InvalidArgumentException('URL must be a valid https URL');
+        }
+
+        return $urlStr;
     }
 }

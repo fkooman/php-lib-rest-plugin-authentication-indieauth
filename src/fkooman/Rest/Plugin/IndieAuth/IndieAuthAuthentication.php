@@ -1,21 +1,20 @@
 <?php
 
 /**
-* Copyright 2014 François Kooman <fkooman@tuxed.net>
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
+ * Copyright 2014 François Kooman <fkooman@tuxed.net>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 namespace fkooman\Rest\Plugin\IndieAuth;
 
 use fkooman\Http\Session;
@@ -27,9 +26,6 @@ use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\ServicePluginInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\Response;
-use fkooman\Http\Uri;
-use InvalidArgumentException;
-use DomDocument;
 use RuntimeException;
 
 class IndieAuthAuthentication implements ServicePluginInterface
@@ -43,7 +39,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var string */
     private $unauthorizedRedirectUri;
 
-    /** @var boolean */
+    /** @var bool */
     private $discoveryEnabled;
 
     /** @var fkooman\Http\Session */
@@ -61,6 +57,9 @@ class IndieAuthAuthentication implements ServicePluginInterface
             $authUri = 'https://indiecert.net/auth';
         }
         $this->authUri = $authUri;
+        if (null === $tokenUri) {
+            $tokenUri = 'https://indiecert.net/token';
+        }
         $this->tokenUri = $tokenUri;
         $this->unauthorizedRedirectUri = null;
         $this->discoveryEnabled = true;
@@ -106,19 +105,10 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $service->post(
             '/indieauth/auth',
             function (Request $request) {
-                // HTTP_REFERER needs to start with absRoot, CSRF protection
-                // FIXME: this moved to fkooman/rest so no longer needed here
-                // if it is enabled in the application, leave it for now until
-                // the referrer check is the default option!
-                if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
-                    throw new BadRequestException('request MUST come from the application');
-                }
-
-                $this->session->deleteKey('me');
-                $this->session->deleteKey('access_token');
-                $this->session->deleteKey('scope');
-
-                $this->session->deleteKey('auth');
+                $this->session->delete('me');
+                $this->session->delete('access_token');
+                $this->session->delete('scope');
+                $this->session->delete('auth');
 
                 $me = InputValidation::validateMe($request->getPostParameter('me'));
                 $scope = InputValidation::validateScope($request->getPostParameter('scope'));
@@ -135,35 +125,35 @@ class IndieAuthAuthentication implements ServicePluginInterface
                     }
                 }
 
-                $clientId = $request->getAbsRoot();
-                $redirectUri = $request->getAbsRoot() . 'indieauth/callback';
+                $clientId = $request->getUrl()->getRootUrl();
+                $redirectUri = $request->getUrl()->getRootUrl().'indieauth/callback';
                 $stateValue = $this->io->getRandomHex();
-                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $request->getPostParameter('redirect_to'));
+                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getPostParameter('redirect_to'));
 
                 $authSession = array(
                     'auth_uri' => $this->authUri,
                     'token_uri' => $this->tokenUri,
                     'me' => $me,
                     'state' => $stateValue,
-                    'redirect_to' => $redirectTo
+                    'redirect_to' => $redirectTo,
                 );
                 if (null !== $scope) {
                     $authSession['scope'] = $scope;
                 }
 
-                $this->session->setValue('auth', $authSession);
+                $this->session->set('auth', $authSession);
 
                 $authUriParams = array(
                     'client_id' => $clientId,
                     'me' => $me,
                     'redirect_uri' => $redirectUri,
-                    'state' => $stateValue
+                    'state' => $stateValue,
                 );
 
                 if (null !== $scope) {
                     $authUriParams['scope'] = $scope;
                 }
-    
+
                 $fullAuthUri = sprintf(
                     '%s?%s',
                     $this->authUri,
@@ -173,23 +163,22 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 return new RedirectResponse($fullAuthUri, 302);
             },
             array(
-                'skipPlugins' => array(
-                    __CLASS__
-                )
+                __CLASS__ => array('enabled' => false),
+                'fkooman\Rest\Plugin\ReferrerCheckPlugin' => array('enabled' => true),
             )
         );
 
         $service->get(
             '/indieauth/callback',
             function (Request $request) {
-                $authSession = $this->session->getValue('auth');
+                $authSession = $this->session->get('auth');
 
                 if (!is_array($authSession)) {
                     throw new BadRequestException('no session available');
                 }
 
-                $queryState = InputValidation::validateState($request->getQueryParameter('state'));
-                $queryCode = InputValidation::validateCode($request->getQueryParameter('code'));
+                $queryState = InputValidation::validateState($request->getUrl()->getQueryParameter('state'));
+                $queryCode = InputValidation::validateCode($request->getUrl()->getQueryParameter('code'));
 
                 if (null === $authSession['state']) {
                     throw new BadRequestException('no session state available');
@@ -203,18 +192,18 @@ class IndieAuthAuthentication implements ServicePluginInterface
                     array(
                         'headers' => array('Accept' => 'application/json'),
                         'body' => array(
-                            'client_id' => $request->getAbsRoot(),
+                            'client_id' => $request->getUrl()->getRootUrl(),
                             // https://github.com/aaronpk/IndieAuth.com/issues/81
                             // "state parameter required on verify POST"
                             'state' => $queryState,
                             'code' => $queryCode,
-                            'redirect_uri' => $request->getAbsRoot() . 'indieauth/callback'
-                        )
+                            'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',
+                        ),
                     )
                 );
 
                 $responseData = $this->decodeResponse($this->client->send($verifyRequest));
-                
+
                 if (!is_array($responseData) || !array_key_exists('me', $responseData)) {
                     throw new RuntimeException('me field not found in response');
                 }
@@ -228,7 +217,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                         )
                     );
                 }
-                $this->session->setValue('me', $responseData['me']);
+                $this->session->set('me', $responseData['me']);
 
                 // if we requested a scope, we also want an access token
                 if (array_key_exists('scope', $authSession) && null !== $authSession['scope']) {
@@ -238,18 +227,18 @@ class IndieAuthAuthentication implements ServicePluginInterface
                         array(
                             'headers' => array('Accept' => 'application/json'),
                             'body' => array(
-                                'client_id' => $request->getAbsRoot(),
+                                'client_id' => $request->getUrl()->getRootUrl(),
                                 // https://github.com/aaronpk/IndieAuth.com/issues/81
                                 // "state parameter required on verify POST"
                                 'state' => $queryState,
                                 'code' => $queryCode,
-                                'redirect_uri' => $request->getAbsRoot() . 'indieauth/callback'
-                            )
+                                'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',
+                            ),
                         )
                     );
 
                     $responseData = $this->decodeResponse($this->client->send($verifyRequest));
-                    
+
                     if (!is_array($responseData) || !array_key_exists('me', $responseData)) {
                         throw new RuntimeException('me field not found in response');
                     }
@@ -263,50 +252,39 @@ class IndieAuthAuthentication implements ServicePluginInterface
                             )
                         );
                     }
-                    $this->session->setValue('access_token', $responseData['access_token']);
-                    $this->session->setValue('scope', $responseData['scope']);
+                    $this->session->set('access_token', $responseData['access_token']);
+                    $this->session->set('scope', $responseData['scope']);
                 }
 
-                $this->session->deleteKey('auth');
+                $this->session->delete('auth');
 
                 return new RedirectResponse($authSession['redirect_to'], 302);
             },
             array(
-                'skipPlugins' => array(
-                    __CLASS__
-                )
+                __CLASS__ => array('enabled' => false),
             )
         );
 
         $service->post(
             '/indieauth/logout',
             function (Request $request) {
-                // HTTP_REFERER needs to start with absRoot, CSRF protection
-                // FIXME: this moved to fkooman/rest so no longer needed here
-                // if it is enabled in the application, leave it for now until
-                // the referrer check is the default option!
-                if (0 !== strpos($request->getHeader('HTTP_REFERER'), $request->getAbsRoot())) {
-                    throw new BadRequestException('request MUST come from the application');
-                }
-
                 $this->session->destroy();
-                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $request->getQueryParameter('redirect_to'));
+                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getQueryParameter('redirect_to'));
 
                 return new RedirectResponse($redirectTo, 302);
             },
             array(
-                'skipPlugins' => array(
-                    __CLASS__
-                )
+                __CLASS__ => array('enabled' => false),
+                'fkooman\Rest\Plugin\ReferrerCheckPlugin' => array('enabled' => true),
             )
         );
     }
 
     public function execute(Request $request, array $routeConfig)
     {
-        $userId = $this->session->getValue('me');
-        $accessToken = $this->session->getValue('access_token');
-        $scope = $this->session->getValue('scope');
+        $userId = $this->session->get('me');
+        $accessToken = $this->session->get('access_token');
+        $scope = $this->session->get('scope');
 
         if (null === $userId) {
             // check if authentication is required...
@@ -317,7 +295,8 @@ class IndieAuthAuthentication implements ServicePluginInterface
             }
 
             if (null !== $this->unauthorizedRedirectUri) {
-                $redirectTo = InputValidation::validateRedirectTo($request->getAbsRoot(), $this->unauthorizedRedirectUri);
+                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $this->unauthorizedRedirectUri);
+
                 return new RedirectResponse(
                     sprintf(
                         '%s?redirect_to=%s',
