@@ -269,7 +269,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
             '/indieauth/logout',
             function (Request $request) {
                 $this->session->destroy();
-                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getQueryParameter('redirect_to'));
+                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getUrl()->getQueryParameter('redirect_to'));
 
                 return new RedirectResponse($redirectTo, 302);
             },
@@ -302,7 +302,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                         '%s?redirect_to=%s',
                         $redirectTo,
                         // FIXME: do we need to remove query/fragment?
-                        $request->getRequestUri()->getUri()
+                        $request->getUrl()->toString()
                     ),
                     302
                 );

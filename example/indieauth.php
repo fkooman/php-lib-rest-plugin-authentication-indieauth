@@ -18,7 +18,9 @@
 require_once dirname(__DIR__).'/vendor/autoload.php';
 
 use fkooman\Rest\Service;
+use fkooman\Rest\PluginRegistry;
 use fkooman\Http\Request;
+use fkooman\Http\Response;
 use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
 use fkooman\Rest\Plugin\IndieAuth\IndieInfo;
 use GuzzleHttp\Client;
@@ -66,7 +68,10 @@ $service->get(
 
         $output .= '</body></html>';
 
-        return $output;
+        $response = new Response();
+        $response->setBody($output);
+
+        return $response;
     },
     array(
         // To view the index page, no authentication is required
@@ -78,10 +83,15 @@ $service->get(
 $service->get(
     '/success',
     function (IndieInfo $u) {
-        return sprintf(
+        $output = sprintf(
             '<html><head></head><body><h1>Hello</h1><table><tr><th>User ID</th><td>%s</td></tr><th>Access Token</th><td>%s</td></tr><tr><th>Scope</th><td>%s</td></tr></table><form method="post" action="indieauth/logout"><input type="submit" value="Logout"></form></body></html>',
             $u->getUserId(), $u->getAccessToken(), $u->getScope()
         );
+
+        $response = new Response();
+        $response->setBody($output);
+
+        return $response;
     }
 );
 
