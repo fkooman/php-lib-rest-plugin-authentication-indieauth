@@ -145,6 +145,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
 
                 $authUriParams = array(
                     'client_id' => $clientId,
+                    'response_type' => 'code',
                     'me' => $me,
                     'redirect_uri' => $redirectUri,
                     'state' => $stateValue,
@@ -195,6 +196,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                             'client_id' => $request->getUrl()->getRootUrl(),
                             // https://github.com/aaronpk/IndieAuth.com/issues/81
                             // "state parameter required on verify POST"
+                            'grant_type' => 'authorization_code',
                             'state' => $queryState,
                             'code' => $queryCode,
                             'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',
@@ -230,6 +232,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                                 'client_id' => $request->getUrl()->getRootUrl(),
                                 // https://github.com/aaronpk/IndieAuth.com/issues/81
                                 // "state parameter required on verify POST"
+                                'grant_type' => 'authorization_code',
                                 'state' => $queryState,
                                 'code' => $queryCode,
                                 'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',

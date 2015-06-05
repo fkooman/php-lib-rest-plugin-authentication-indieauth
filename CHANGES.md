@@ -3,6 +3,8 @@
 ## 0.4.0
 - update `fkooman/rest` dependency
 - `indieauth/logout` is now a POST instead of GET
+- be more compliant with OAuth (implement `response_type` authorize parameter
+  and `grant_type` POST parameter)
 
 ## 0.3.0
 - support redirecting to authentication page when not authenticated instead 
