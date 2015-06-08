@@ -86,9 +86,9 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 443,
                 'QUERY_STRING' => '',
-                'REQUEST_URI' => '/indieauth/auth',
+                'REQUEST_URI' => '/_indieauth/auth',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/indieauth/auth',
+                'PATH_INFO' => '/_indieauth/auth',
                 'REQUEST_METHOD' => 'POST',
                 'HTTP_REFERER' => 'https://www.example.org/',
                 'HTTPS' => 'on',
@@ -98,9 +98,9 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
             )
         );
 
-#        $request = new Request('https://www.example.org/indieauth/auth', 'POST');
+#        $request = new Request('https://www.example.org/_indieauth/auth', 'POST');
 #        $request->setRoot('/');
-#        $request->setPathInfo('/indieauth/auth');
+#        $request->setPathInfo('/_indieauth/auth');
 #        $request->setHeaders(
 #            array(
 #                'HTTP_REFERER' => 'https://www.example.org/'
@@ -164,16 +164,16 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
                 'QUERY_STRING' => 'code=54321',
-                'REQUEST_URI' => '/indieauth/callback?code=54321',
+                'REQUEST_URI' => '/_indieauth/callback?code=54321',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/indieauth/callback',
+                'PATH_INFO' => '/_indieauth/callback',
                 'REQUEST_METHOD' => 'GET',
             )
         );
 
-#        $request = new Request('http://www.example.org/indieauth/callback?code=54321', 'GET');
+#        $request = new Request('http://www.example.org/_indieauth/callback?code=54321', 'GET');
 #        $request->setRoot('/');
-#        $request->setPathInfo('/indieauth/callback');
+#        $request->setPathInfo('/_indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -199,16 +199,16 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
                 'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/indieauth/callback?code=54321&state=12345abcdef',
+                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/indieauth/callback',
+                'PATH_INFO' => '/_indieauth/callback',
                 'REQUEST_METHOD' => 'GET',
             )
         );
 
-#        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
+#        $request = new Request('http://www.example.org/_indieauth/callback?code=54321&state=12345abcdef', 'GET');
 #        $request->setRoot('/');
-#        $request->setPathInfo('/indieauth/callback');
+#        $request->setPathInfo('/_indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -231,18 +231,18 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
                 'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/indieauth/callback?code=54321&state=12345abcdef',
+                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/indieauth/callback',
+                'PATH_INFO' => '/_indieauth/callback',
                 'REQUEST_METHOD' => 'GET',
                 'HTTP_ACCEPT' => 'application/json',
             )
         );
 
-#        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
+#        $request = new Request('http://www.example.org/_indieauth/callback?code=54321&state=12345abcdef', 'GET');
 #        $request->setRoot('/');
 #        $request->setHeaders(array('Accept' => 'application/json'));
-#        $request->setPathInfo('/indieauth/callback');
+#        $request->setPathInfo('/_indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
@@ -291,18 +291,18 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
                 'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/indieauth/callback?code=54321&state=12345abcdef',
+                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/indieauth/callback',
+                'PATH_INFO' => '/_indieauth/callback',
                 'REQUEST_METHOD' => 'GET',
                 'HTTP_ACCEPT' => 'application/x-www-form-urlencoded',
             )
         );
 
-#        $request = new Request('http://www.example.org/indieauth/callback?code=54321&state=12345abcdef', 'GET');
+#        $request = new Request('http://www.example.org/_indieauth/callback?code=54321&state=12345abcdef', 'GET');
 #        $request->setRoot('/');
 #        $request->setHeaders(array('Accept' => 'application/x-www-form-urlencoded'));
-#        $request->setPathInfo('/indieauth/callback');
+#        $request->setPathInfo('/_indieauth/callback');
 
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()

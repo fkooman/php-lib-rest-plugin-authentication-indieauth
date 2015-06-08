@@ -57,14 +57,14 @@ $service->setPluginRegistry($pluginRegistry);
 $service->get(
     '/',
     function (Request $request) {
-        // Show Sign In form;  POST to 'indieauth/auth' endpoint which is registered by the IndieAuth plugin
+        // Show Sign In form;  POST to '_indieauth/auth' endpoint which is registered by the IndieAuth plugin
         $output = '<html><head></style></head><body><h1>Sign In</h1>';
 
         // without requesting access token (no scope)
-        $output .= '<h2>Authentication Only</h2><form method="post" action="indieauth/auth">https://<input type="text" name="me" placeholder="example.org" required><input type="hidden" name="redirect_to" value="/success"><input type="submit" value="Sign In"></form>';
+        $output .= '<h2>Authentication Only</h2><form method="post" action="_indieauth/auth">https://<input type="text" name="me" placeholder="example.org" required><input type="hidden" name="redirect_to" value="/success"><input type="submit" value="Sign In"></form>';
 
         // with requesting access token (scope)
-        $output .= '<h2>Authentication &amp; Token</h2><form method="post" action="indieauth/auth">https://<input type="text" name="me" placeholder="example.org" required><input type="text" name="scope" value="post"><input type="hidden" name="redirect_to" value="/success"><input type="submit" value="Sign In"></form>';
+        $output .= '<h2>Authentication &amp; Token</h2><form method="post" action="_indieauth/auth">https://<input type="text" name="me" placeholder="example.org" required><input type="text" name="scope" value="post"><input type="hidden" name="redirect_to" value="/success"><input type="submit" value="Sign In"></form>';
 
         $output .= '</body></html>';
 
@@ -84,7 +84,7 @@ $service->get(
     '/success',
     function (IndieInfo $u) {
         $output = sprintf(
-            '<html><head></head><body><h1>Hello</h1><table><tr><th>User ID</th><td>%s</td></tr><th>Access Token</th><td>%s</td></tr><tr><th>Scope</th><td>%s</td></tr></table><form method="post" action="indieauth/logout"><input type="submit" value="Logout"></form></body></html>',
+            '<html><head></head><body><h1>Hello</h1><table><tr><th>User ID</th><td>%s</td></tr><th>Access Token</th><td>%s</td></tr><tr><th>Scope</th><td>%s</td></tr></table><form method="post" action="_indieauth/logout"><input type="submit" value="Logout"></form></body></html>',
             $u->getUserId(), $u->getAccessToken(), $u->getScope()
         );
 

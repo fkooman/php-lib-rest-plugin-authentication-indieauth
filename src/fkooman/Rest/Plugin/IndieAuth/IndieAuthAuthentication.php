@@ -103,7 +103,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
         }
 
         $service->post(
-            '/indieauth/auth',
+            '/_indieauth/auth',
             function (Request $request) {
                 $this->session->delete('me');
                 $this->session->delete('access_token');
@@ -170,7 +170,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
         );
 
         $service->get(
-            '/indieauth/callback',
+            '/_indieauth/callback',
             function (Request $request) {
                 $authSession = $this->session->get('auth');
 
@@ -269,7 +269,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
         );
 
         $service->post(
-            '/indieauth/logout',
+            '/_indieauth/logout',
             function (Request $request) {
                 $this->session->destroy();
                 $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getUrl()->getQueryParameter('redirect_to'));
