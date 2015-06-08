@@ -126,7 +126,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                 }
 
                 $clientId = $request->getUrl()->getRootUrl();
-                $redirectUri = $request->getUrl()->getRootUrl().'indieauth/callback';
+                $redirectUri = $request->getUrl()->getRootUrl().'_indieauth/callback';
                 $stateValue = $this->io->getRandomHex();
                 $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getPostParameter('redirect_to'));
 
@@ -199,7 +199,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                             'grant_type' => 'authorization_code',
                             'state' => $queryState,
                             'code' => $queryCode,
-                            'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',
+                            'redirect_uri' => $request->getUrl()->getRootUrl().'_indieauth/callback',
                         ),
                     )
                 );
@@ -235,7 +235,7 @@ class IndieAuthAuthentication implements ServicePluginInterface
                                 'grant_type' => 'authorization_code',
                                 'state' => $queryState,
                                 'code' => $queryCode,
-                                'redirect_uri' => $request->getUrl()->getRootUrl().'indieauth/callback',
+                                'redirect_uri' => $request->getUrl()->getRootUrl().'_indieauth/callback',
                             ),
                         )
                     );
