@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace fkooman\Rest\Plugin\IndieAuth;
 
 use fkooman\Http\Session;
@@ -23,12 +24,12 @@ use fkooman\Rest\Service;
 use fkooman\Http\RedirectResponse;
 use fkooman\Http\Exception\BadRequestException;
 use fkooman\Http\Exception\UnauthorizedException;
-use fkooman\Rest\ServicePluginInterface;
+use fkooman\Rest\Plugin\Authentication\AuthenticationPluginInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\Response;
 use RuntimeException;
 
-class IndieAuthAuthentication implements ServicePluginInterface
+class IndieAuthAuthentication implements AuthenticationPluginInterface
 {
     /** @var string */
     private $authUri;
@@ -42,16 +43,19 @@ class IndieAuthAuthentication implements ServicePluginInterface
     /** @var bool */
     private $discoveryEnabled;
 
-    /** @var fkooman\Http\Session */
+    /** @var \fkooman\Http\Session */
     private $session;
 
-    /** @var GuzzleHttp\Client */
+    /** @var \GuzzleHttp\Client */
     private $client;
 
-    /** @var fkooman\Rest\Plugin\IndieAuth\IO */
+    /** @var \fkooman\Rest\Plugin\IndieAuth\IO */
     private $io;
 
-    public function __construct($authUri = null, $tokenUri = null)
+    /** @var array */
+    private $authParams;
+
+    public function __construct($authUri = null, $tokenUri = null, array $authParams = array())
     {
         if (null === $authUri) {
             $authUri = 'https://indiecert.net/auth';
@@ -63,6 +67,25 @@ class IndieAuthAuthentication implements ServicePluginInterface
         $this->tokenUri = $tokenUri;
         $this->unauthorizedRedirectUri = null;
         $this->discoveryEnabled = true;
+        if (!array_key_exists('realm', $authParams)) {
+            $authParams['realm'] = 'Protected Resource';
+        }
+        $this->authParams = $authParams;
+    }
+
+    public function getScheme()
+    {
+        return 'IndieAuth';
+    }
+
+    public function getAuthParams()
+    {
+        return $this->authParams;
+    }
+
+    public function isAttempt(Request $request)
+    {
+        return true;
     }
 
     public function setUnauthorizedRedirectUri($unauthorizedRedirectUri)

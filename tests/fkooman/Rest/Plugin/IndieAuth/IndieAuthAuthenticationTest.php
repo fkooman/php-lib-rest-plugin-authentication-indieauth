@@ -14,6 +14,7 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 namespace fkooman\Rest;
 
 use fkooman\Http\Request;
@@ -146,11 +147,23 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->init($service);
 
         $response = $service->run($request);
-        $this->assertEquals(302, $response->getStatusCode());
+
         $this->assertEquals(
-            'https://indiecert.net/auth?client_id=https%3A%2F%2Fwww.example.org%2F&response_type=code&me=https%3A%2F%2Fmydomain.org%2F&redirect_uri=https%3A%2F%2Fwww.example.org%2F_indieauth%2Fcallback&state=12345abcdef',
-            $response->getHeader('Location')
+            array(
+                'HTTP/1.1 302 Found',
+                'Content-Type: text/html;charset=UTF-8',
+                'Location: https://indiecert.net/auth?client_id=https%3A%2F%2Fwww.example.org%2F&response_type=code&me=https%3A%2F%2Fmydomain.org%2F&redirect_uri=https%3A%2F%2Fwww.example.org%2F_indieauth%2Fcallback&state=12345abcdef',
+                '',
+                '',
+            ),
+            $response->toArray()
         );
+
+#        $this->assertEquals(302, $response->getStatusCode());
+#        $this->assertEquals(
+#            'https://indiecert.net/auth?client_id=https%3A%2F%2Fwww.example.org%2F&response_type=code&me=https%3A%2F%2Fmydomain.org%2F&redirect_uri=https%3A%2F%2Fwww.example.org%2F_indieauth%2Fcallback&state=12345abcdef',
+#            $response->getHeader('Location')
+#        );
     }
 
     /**
@@ -280,8 +293,19 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->init($service);
 
         $response = $service->run($request);
-        $this->assertEquals(302, $response->getStatusCode());
-        $this->assertEquals('http://www.example.org/', $response->getHeader('Location'));
+        $this->assertEquals(
+            array(
+                'HTTP/1.1 302 Found',
+                'Content-Type: text/html;charset=UTF-8',
+                'Location: http://www.example.org/',
+                '',
+                '',
+            ),
+            $response->toArray()
+        );
+
+#        $this->assertEquals(302, $response->getStatusCode());
+#        $this->assertEquals('http://www.example.org/', $response->getHeader('Location'));
     }
 
     public function testIndieAuthCallbackForm()
@@ -336,7 +360,18 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->init($service);
 
         $response = $service->run($request);
-        $this->assertEquals(302, $response->getStatusCode());
-        $this->assertEquals('http://www.example.org/', $response->getHeader('Location'));
+        $this->assertEquals(
+            array(
+                'HTTP/1.1 302 Found',
+                'Content-Type: text/html;charset=UTF-8',
+                'Location: http://www.example.org/',
+                '',
+                '',
+            ),
+            $response->toArray()
+        );
+
+#        $this->assertEquals(302, $response->getStatusCode());
+#        $this->assertEquals('http://www.example.org/', $response->getHeader('Location'));
     }
 }

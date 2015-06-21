@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "95fa5cb1b57a95d51fe5697150d855d6",
+    "hash": "428c203b59a0eef804bf6ef4f4690c42",
     "packages": [
         {
             "name": "fkooman/json",
@@ -45,24 +45,22 @@
         },
         {
             "name": "fkooman/rest",
-            "version": "dev-develop",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fkooman/php-lib-rest.git",
-                "reference": "efbbf1309f7cfd24c06eef47f6913bd1c91720ac"
+                "reference": "077f270ae35052e81254bd2aa7638b0294946b6a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/efbbf1309f7cfd24c06eef47f6913bd1c91720ac",
-                "reference": "efbbf1309f7cfd24c06eef47f6913bd1c91720ac",
+                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/077f270ae35052e81254bd2aa7638b0294946b6a",
+                "reference": "077f270ae35052e81254bd2aa7638b0294946b6a",
                 "shasum": ""
             },
             "require": {
+                "ext-mbstring": "*",
                 "fkooman/json": "~0.6.0",
                 "php": ">=5.3.3"
-            },
-            "require-dev": {
-                "ext-xdebug": "*"
             },
             "suggest": {
                 "fkooman/rest-plugin-basic": "Basic Authentication plugin",
@@ -74,8 +72,8 @@
             "type": "library",
             "autoload": {
                 "psr-0": {
-                    "fkooman\\Http": "src/",
-                    "fkooman\\Rest": "src/"
+                    "fkooman\\Http\\": "src/",
+                    "fkooman\\Rest\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -90,7 +88,7 @@
                 }
             ],
             "description": "Simple PHP library for writing REST services.",
-            "time": "2015-06-09 07:43:21"
+            "time": "2015-06-21 10:12:38"
         },
         {
             "name": "guzzlehttp/guzzle",

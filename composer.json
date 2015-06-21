@@ -8,7 +8,7 @@
     ],
     "autoload": {
         "psr-0": {
-            "fkooman\\Rest\\Plugin\\IndieAuth": "src/"
+            "fkooman\\Rest\\Plugin\\IndieAuth\\": "src/"
         }
     },
     "description": "IndieAuth plugin for fkooman/rest",
@@ -16,8 +16,8 @@
     "name": "fkooman/rest-plugin-indieauth",
     "require": {
         "ext-openssl": "*",
-	"ext-xml": "*",
-        "fkooman/rest": "dev-develop",
+        "ext-xml": "*",
+        "fkooman/rest": "dev-master",
         "guzzlehttp/guzzle": "~4.0",
         "php": ">=5.4.0"
     }
