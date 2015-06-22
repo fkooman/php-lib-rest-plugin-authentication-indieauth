@@ -30,7 +30,7 @@ use InvalidArgumentException;
  */
 class Discovery
 {
-    /** @var GuzzleHttp\Client */
+    /** @var \GuzzleHttp\Client */
     private $client;
 
     public function __construct(Client $client = null)
