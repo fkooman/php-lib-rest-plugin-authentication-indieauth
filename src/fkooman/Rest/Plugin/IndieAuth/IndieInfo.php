@@ -18,36 +18,20 @@
 
 namespace fkooman\Rest\Plugin\IndieAuth;
 
-class IndieInfo
+use fkooman\Rest\Plugin\Authentication\UserInfoInterface;
+
+class IndieInfo implements UserInfoInterface
 {
     /** @var string */
     private $userId;
 
-    /** @var string */
-    private $accessToken;
-
-    /** @var string */
-    private $scope;
-
-    public function __construct($userId, $accessToken, $scope)
+    public function __construct($userId)
     {
         $this->userId = $userId;
-        $this->accessToken = $accessToken;
-        $this->scope = $scope;
     }
 
     public function getUserId()
     {
         return $this->userId;
-    }
-
-    public function getAccessToken()
-    {
-        return $this->accessToken;
-    }
-
-    public function getScope()
-    {
-        return $this->scope;
     }
 }

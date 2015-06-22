@@ -52,12 +52,7 @@ class InputValidation
             $redirectTo = $rootUrl;
         }
 
-        // redirectTo specified, using path relative to absRoot
-        if (0 === strpos($redirectTo, '/')) {
-            $redirectTo = $rootUrl.substr($redirectTo, 1);
-        }
-
-        if (false === filter_var($redirectTo, FILTER_VALIDATE_URL)) { //, FILTER_FLAG_PATH_REQUIRED)) {
+        if (false === filter_var($redirectTo, FILTER_VALIDATE_URL)) {
             throw new BadRequestException(sprintf('invalid redirect_to URL "%s"', $redirectTo));
         }
 
@@ -100,39 +95,5 @@ class InputValidation
         }
 
         return $me;
-    }
-
-    public static function validateScope($scope)
-    {
-        // allow no scope as well
-        if (null === $scope) {
-            return;
-        }
-
-        if (!is_string($scope)) {
-            throw new BadRequestException('scope must be string');
-        }
-
-        if (0 >= strlen($scope)) {
-            throw new BadRequestException('scope must not be empty');
-        }
-
-        $scopeTokens = explode(' ', $scope);
-        foreach ($scopeTokens as $token) {
-            self::validateScopeToken($token);
-        }
-        sort($scopeTokens, SORT_STRING);
-
-        return implode(' ', array_values(array_unique($scopeTokens, SORT_STRING)));
-    }
-
-    private static function validateScopeToken($scopeToken)
-    {
-        if (!is_string($scopeToken) || 0 >= strlen($scopeToken)) {
-            throw new BadRequestException('scope token must be a non-empty string');
-        }
-        if (1 !== preg_match('/^(?:\x21|[\x23-\x5B]|[\x5D-\x7E])+$/', $scopeToken)) {
-            throw new BadRequestException('invalid characters in scope token');
-        }
     }
 }

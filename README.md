@@ -23,8 +23,7 @@ So if your application is running under `https://www.example.org/foo`, the
 The `/indieauth/auth` endpoint accepts a `POST` containing the `me` parameter 
 with the URL to the user's homepage and the optionally the `redirect_to` 
 parameter. If the `redirect_to` field is missing the browser will redirect back 
-to the application root. You can also provide a `scope` parameter to request
-an access token.
+to the application root.
 
 So for example to ask the user for their home page and redirecting
 them to `https://www.example.org/foo/profile` after successful authentication

@@ -42,9 +42,25 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $sessionStub->method('get')->willReturn(
-            'https://mydomain.org/'
+
+        $map = array(
+            array(
+                'auth',
+                array(
+                    'client_id' => 'http://www.example.org/',
+                    'state' => '12345abcdef',
+                    'redirect_to' => 'http://www.example.org/',
+                    'auth_uri' => 'https://indiefoo.net/auth',
+                ),
+            ),
+            array('me', 'https://mydomain.org/'),
         );
+        $sessionStub->method('get')
+             ->will($this->returnValueMap($map));
+
+#        $sessionStub->method('get')->willReturn(
+#            'https://mydomain.org/'
+#        );
 
         $indieAuthAuth = new IndieAuthAuthentication();
         $indieAuthAuth->setSession($sessionStub);
@@ -55,7 +71,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 
     /**
      * @expectedException fkooman\Http\Exception\UnauthorizedException
-     * @expectedExceptionMessage not authenticated
+     * @expectedExceptionMessage no_credentials
      */
     public function testIndieAuthNotAuthenticated()
     {
@@ -261,12 +277,23 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->disableOriginalConstructor()
                      ->getMock();
         $map = array(
-            'state' => '12345abcdef',
-            'redirect_to' => 'http://www.example.org/',
-            'auth_uri' => 'https://indiefoo.net/auth',
-            'me' => 'https://mydomain.org/',
+            array(
+                'auth',
+                array(
+                    'client_id' => 'http://www.example.org/',
+                    'state' => '12345abcdef',
+                    'redirect_uri' => 'http://www.example.org/_indieauth/callback',
+                    'redirect_to' => 'http://www.example.org/',
+                    'auth_uri' => 'https://indiefoo.net/auth',
+                    'me' => 'https://mydomain.org/',
+                ),
+            ),
+            array('me', 'https://mydomain.org/'),
         );
-        $sessionStub->method('get')->willReturn($map);
+        $sessionStub->method('get')
+             ->will($this->returnValueMap($map));
+
+        //$sessionStub->method('get')->returnValueMap($map);
 
         $client = new Client();
         $mock = new Mock(
@@ -288,6 +315,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 
         $service = new Service();
         $indieAuthAuth = new IndieAuthAuthentication();
+
         $indieAuthAuth->setSession($sessionStub);
         $indieAuthAuth->setClient($client);
         $indieAuthAuth->init($service);
@@ -332,12 +360,21 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                      ->disableOriginalConstructor()
                      ->getMock();
         $map = array(
-            'state' => '12345abcdef',
-            'redirect_to' => 'http://www.example.org/',
-            'auth_uri' => 'https://indiefoo.net/auth',
-            'me' => 'https://mydomain.org/',
+            array(
+                'auth',
+                array(
+                    'state' => '12345abcdef',
+                    'redirect_to' => 'http://www.example.org/',
+                    'auth_uri' => 'https://indiefoo.net/auth',
+                    'me' => 'https://mydomain.org/',
+                    'client_id' => 'http://www.example.org/',
+                    'redirect_uri' => 'http://www.example.org/_indieauth/callback',
+                ),
+            ),
+            array('me', 'https://mydomain.org/'),
         );
-        $sessionStub->method('get')->willReturn($map);
+        $sessionStub->method('get')
+             ->will($this->returnValueMap($map));
 
         $client = new Client();
         $mock = new Mock(
