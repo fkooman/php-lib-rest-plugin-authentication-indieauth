@@ -26,7 +26,7 @@ use fkooman\Http\Exception\BadRequestException;
 use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\Plugin\Authentication\AuthenticationPluginInterface;
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\Response;
+use GuzzleHttp\Message\ResponseInterface;
 use RuntimeException;
 
 class IndieAuthAuthentication implements AuthenticationPluginInterface
@@ -295,7 +295,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
         throw $e;
     }
 
-    private function decodeResponse(Response $response)
+    private function decodeResponse(ResponseInterface $response)
     {
         $contentType = $response->getHeader('Content-Type');
 
