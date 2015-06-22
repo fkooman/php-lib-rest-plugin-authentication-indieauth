@@ -52,6 +52,11 @@ class InputValidation
             $redirectTo = $rootUrl;
         }
 
+        // if redirectTo starts with a '/' append it to rootUrl
+        if (0 === strpos($redirectTo, '/')) {
+            $redirectTo = $rootUrl.substr($redirectTo, 1);
+        }
+
         if (false === filter_var($redirectTo, FILTER_VALIDATE_URL)) {
             throw new BadRequestException(sprintf('invalid redirect_to URL "%s"', $redirectTo));
         }

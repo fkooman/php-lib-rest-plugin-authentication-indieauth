@@ -76,7 +76,7 @@ $service->get(
     '/success',
     function (IndieInfo $u) {
         $output = sprintf(
-            '<html><head></head><body><h1>Hello</h1><table><tr><th>User ID</th><td>%s</td></tr><th>Access Token</th><td>%s</td></tr><tr><th>Scope</th><td>%s</td></tr></table><form method="post" action="_indieauth/logout"><input type="submit" value="Logout"></form></body></html>',
+            '<html><head></head><body><h1>Hello</h1><table><tr><th>User ID</th><td>%s</td></tr></table><form method="post" action="_indieauth/logout"><input type="submit" value="Logout"></form></body></html>',
             $u->getUserId()
         );
 
