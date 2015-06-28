@@ -5,7 +5,7 @@
 %global github_name      php-lib-rest-plugin-indieauth
 
 Name:       php-%{composer_vendor}-%{composer_project}
-Version:    0.4.0
+Version:    0.5.0
 Release:    1%{?dist}
 Summary:    IndieAuth Authentication plugin for fkooman/rest
 
@@ -19,8 +19,8 @@ Provides:   php-composer(%{composer_vendor}/%{composer_project}) = %{version}
 
 Requires:   php >= 5.4
 
-Requires:   php-composer(fkooman/rest) >= 0.8.3
-Requires:   php-composer(fkooman/rest) < 0.9.0
+Requires:   php-composer(fkooman/rest) >= 0.9.0
+Requires:   php-composer(fkooman/rest) < 0.10.0
 Requires:   php-composer(guzzlehttp/guzzle) >= 4.0
 Requires:   php-composer(guzzlehttp/guzzle) < 5.0
 
@@ -43,6 +43,9 @@ cp -pr src/* ${RPM_BUILD_ROOT}%{_datadir}/php
 %doc README.md CHANGES.md COPYING composer.json
 
 %changelog
+* Sun Jun 28 2015 François Kooman <fkooman@tuxed.net> - 0.5.0-1
+- update to 0.5.0
+
 * Tue May 05 2015 François Kooman <fkooman@tuxed.net> - 0.4.0-1
 - update to 0.4.0
 

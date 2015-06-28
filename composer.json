@@ -17,7 +17,7 @@
     "require": {
         "ext-openssl": "*",
         "ext-xml": "*",
-        "fkooman/rest": "dev-master",
+        "fkooman/rest": "~0.9.0",
         "guzzlehttp/guzzle": "~4.0",
         "php": ">=5.4.0"
     }

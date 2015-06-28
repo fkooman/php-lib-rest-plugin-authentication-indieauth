@@ -1,5 +1,8 @@
 # Release History
 
+## 0.5.0
+- update `fkooman/rest`
+
 ## 0.4.0
 - update `fkooman/rest` dependency
 - `indieauth/logout` is now a POST instead of GET
