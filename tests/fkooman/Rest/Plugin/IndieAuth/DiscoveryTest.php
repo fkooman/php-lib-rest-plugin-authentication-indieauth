@@ -99,4 +99,64 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
         $discovery = new Discovery();
         $discoveryResponse = $discovery->discover('http://www.tuxed.net/fkooman/');
     }
+
+    public function testDiscoveryRedirect()
+    {
+        $client = new Client();
+        $mock = new Mock(
+            array(
+                new Response(
+                    302,
+                    array(
+                        'Content-Type' => 'text/html',
+                        'Location' => 'https://example.org/foo',
+                    )
+                ),
+                new Response(
+                    200,
+                    array('Content-Type' => 'text/html'),
+                    Stream::factory(
+                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                    )
+                ),
+            )
+        );
+        $client->getEmitter()->attach($mock);
+
+        $discovery = new Discovery($client);
+        $discoveryResponse = $discovery->discover('https://www.tuxed.net/fkooman/');
+        $this->assertEquals('https://indiecert.net/auth', $discoveryResponse->getAuthorizationEndpoint());
+        $this->assertEquals('https://indiecert.net/token', $discoveryResponse->getTokenEndpoint());
+    }
+
+    /**
+     * @expectedException RuntimeException
+     * @expectedExceptionMessage Redirect URL, http://example.org/foo, does not use one of the allowed redirect protocols: https
+     */
+    public function testDiscoveryRedirectToHttp()
+    {
+        $client = new Client();
+        $mock = new Mock(
+            array(
+                new Response(
+                    302,
+                    array(
+                        'Content-Type' => 'text/html',
+                        'Location' => 'http://example.org/foo',
+                    )
+                ),
+                new Response(
+                    200,
+                    array('Content-Type' => 'text/html'),
+                    Stream::factory(
+                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                    )
+                ),
+            )
+        );
+        $client->getEmitter()->attach($mock);
+
+        $discovery = new Discovery($client);
+        $discoveryResponse = $discovery->discover('https://www.tuxed.net/fkooman/');
+    }
 }
