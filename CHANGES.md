@@ -1,5 +1,9 @@
 # Release History
 
+## 0.5.1
+- update `guzzlehttp/guzzle`
+- add all module dependencies to composer.json and spec file
+
 ## 0.5.0
 - update `fkooman/rest`
 

@@ -17,12 +17,19 @@ BuildArch:  noarch
 
 Provides:   php-composer(%{composer_vendor}/%{composer_project}) = %{version}
 
-Requires:   php >= 5.4
+Requires:   php(language) >= 5.4
+Requires:   php-dom
+Requires:   php-filter
+Requires:   php-libxml
+Requires:   php-openssl
+Requires:   php-pcre
+Requires:   php-spl
+Requires:   php-standard
 
 Requires:   php-composer(fkooman/rest) >= 0.9.0
 Requires:   php-composer(fkooman/rest) < 0.10.0
-Requires:   php-composer(guzzlehttp/guzzle) >= 4.0
-Requires:   php-composer(guzzlehttp/guzzle) < 5.0
+Requires:   php-composer(guzzlehttp/guzzle) >= 5.3
+Requires:   php-composer(guzzlehttp/guzzle) < 6.0
 
 %description
 Library written in PHP to make it easy to develop REST applications.
@@ -40,7 +47,8 @@ cp -pr src/* ${RPM_BUILD_ROOT}%{_datadir}/php
 %defattr(-,root,root,-)
 %dir %{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieAuth
 %{_datadir}/php/%{composer_vendor}/Rest/Plugin/IndieAuth/*
-%doc README.md CHANGES.md COPYING composer.json
+%doc README.md CHANGES.md composer.json
+%license COPYING
 
 %changelog
 * Sun Jun 28 2015 François Kooman <fkooman@tuxed.net> - 0.5.0-1

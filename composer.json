@@ -15,10 +15,14 @@
     "license": "Apache-2.0",
     "name": "fkooman/rest-plugin-indieauth",
     "require": {
+        "ext-dom": "*",
+        "ext-filter": "*",
+        "ext-libxml": "*",
         "ext-openssl": "*",
-        "ext-xml": "*",
+        "ext-pcre": "*",
+        "ext-spl": "*",
         "fkooman/rest": "~0.9.0",
-        "guzzlehttp/guzzle": "~4.0",
-        "php": ">=5.4.0"
+        "guzzlehttp/guzzle": "~5.3",
+        "php": ">=5.4"
     }
 }
