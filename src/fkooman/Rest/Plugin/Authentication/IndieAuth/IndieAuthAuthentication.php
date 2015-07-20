@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-namespace fkooman\Rest\Plugin\IndieAuth;
+namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
 use fkooman\Http\Session;
 use fkooman\Http\Request;
@@ -271,8 +271,8 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
         }
 
         // check if authentication is required...
-        if (array_key_exists('requireAuth', $routeConfig)) {
-            if (!$routeConfig['requireAuth']) {
+        if (array_key_exists('require', $routeConfig)) {
+            if (!$routeConfig['require']) {
                 return;
             }
         }

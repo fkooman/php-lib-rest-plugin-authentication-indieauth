@@ -18,10 +18,9 @@
 require_once dirname(__DIR__).'/vendor/autoload.php';
 
 use fkooman\Rest\Service;
-use fkooman\Rest\PluginRegistry;
 use fkooman\Http\Request;
-use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
-use fkooman\Rest\Plugin\IndieAuth\IndieInfo;
+use fkooman\Rest\Plugin\Authentication\IndieAuth\IndieAuthAuthentication;
+use fkooman\Rest\Plugin\Authentication\IndieAuth\IndieInfo;
 use GuzzleHttp\Client;
 
 $service = new Service();
@@ -49,9 +48,7 @@ $indieAuth->setClient($client);
 // disable discovery (i.e. "Distributed IndieAuth")
 // $indieAuth->setDiscovery(false);
 
-$pluginRegistry = new PluginRegistry();
-$pluginRegistry->registerDefaultPlugin($indieAuth);
-$service->setPluginRegistry($pluginRegistry);
+$service->getPluginRegistry()->registerDefaultPlugin($indieAuth);
 
 $service->get(
     '/',
@@ -67,7 +64,7 @@ $service->get(
     },
     array(
         // To view the index page, no authentication is required
-        'fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication' => array('enabled' => false),
+        'fkooman\Rest\Plugin\Authentication\IndieAuth\IndieAuthAuthentication' => array('enabled' => false),
     )
 );
 

@@ -15,10 +15,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace fkooman\Rest;
+namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
+use fkooman\Rest\Service;
 use fkooman\Http\Request;
-use fkooman\Rest\Plugin\IndieAuth\IndieAuthAuthentication;
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
 use GuzzleHttp\Message\Response;
@@ -130,7 +130,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 #            )
 #        );
 
-        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\IndieAuth\IO')
+        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\Authentication\IndieAuth\IO')
                      ->disableOriginalConstructor()
                      ->getMock();
         $ioStub->method('getRandomHex')->willReturn(
@@ -144,7 +144,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                        file_get_contents(__DIR__.'/data/fkooman.html')
                     )
                 ),
             )
@@ -182,10 +182,6 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 #        );
     }
 
-    /**
-     * @expectedException fkooman\Http\Exception\BadRequestException
-     * @expectedExceptionMessage no session available
-     */
     public function testIndieAuthCallbackNoSessionState()
     {
         $request = new Request(
@@ -214,13 +210,17 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->setSession($sessionStub);
         $indieAuthAuth->init($service);
 
-        $service->run($request);
+        $this->assertSame(
+            array(
+                'HTTP/1.1 400 Bad Request',
+                'Content-Type: application/json',
+                '',
+                '{"error":"no session available"}',
+            ),
+            $service->run($request)->toArray()
+        );
     }
 
-    /**
-     * @expectedException fkooman\Http\Exception\BadRequestException
-     * @expectedExceptionMessage non matching state
-     */
     public function testIndieAuthCallbackNonMatchingState()
     {
         $request = new Request(
@@ -250,7 +250,15 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         $indieAuthAuth->setSession($sessionStub);
         $indieAuthAuth->init($service);
 
-        $service->run($request);
+        $this->assertSame(
+            array(
+                'HTTP/1.1 400 Bad Request',
+                'Content-Type: application/json',
+                '',
+                '{"error":"non matching state"}',
+            ),
+            $service->run($request)->toArray()
+        );
     }
 
     public function testIndieAuthCallbackJson()

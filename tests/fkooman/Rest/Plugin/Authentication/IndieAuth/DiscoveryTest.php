@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace fkooman\Rest\Plugin\IndieAuth;
+namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
@@ -34,7 +34,7 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                        file_get_contents(__DIR__.'/data/fkooman.html')
                     )
                 ),
             )
@@ -116,7 +116,7 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                        file_get_contents(__DIR__.'/data/fkooman.html')
                     )
                 ),
             )
@@ -149,7 +149,7 @@ class DiscoveryTest extends PHPUnit_Framework_TestCase
                     200,
                     array('Content-Type' => 'text/html'),
                     Stream::factory(
-                        file_get_contents(dirname(dirname(dirname(dirname(__DIR__)))).'/data/fkooman.html')
+                        file_get_contents(__DIR__.'/data/fkooman.html')
                     )
                 ),
             )

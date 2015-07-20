@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/fkooman/php-lib-rest-plugin-indieauth.svg?branch=master)](https://travis-ci.org/fkooman/php-lib-rest-plugin-indieauth)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/fkooman/php-lib-rest-plugin-indieauth/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/fkooman/php-lib-rest-plugin-indieauth/?branch=master)
+[![Build Status](https://travis-ci.org/fkooman/php-lib-rest-plugin-authentication-indieauth.svg?branch=master)](https://travis-ci.org/fkooman/php-lib-rest-plugin-authentication-indieauth)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/fkooman/php-lib-rest-plugin-authentication-indieauth/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/fkooman/php-lib-rest-plugin-authentication-indieauth/?branch=master)
 
 # Introduction
 This plugin enables one to use IndieAuth authentication with `fkooman/rest`.

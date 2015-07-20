@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-namespace fkooman\Rest\Plugin\IndieAuth;
+namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
 use fkooman\Rest\Plugin\Authentication\UserInfoInterface;
 
