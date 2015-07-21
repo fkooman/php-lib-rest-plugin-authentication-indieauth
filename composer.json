@@ -18,10 +18,10 @@
         "ext-dom": "*",
         "ext-filter": "*",
         "ext-libxml": "*",
-        "ext-openssl": "*",
         "ext-pcre": "*",
         "ext-spl": "*",
-        "fkooman/rest": "^1.0.0",
+        "fkooman/io": "^1.0.0",
+        "fkooman/rest": "^1.0.1",
         "fkooman/rest-plugin-authentication": "^1.0.0",
         "guzzlehttp/guzzle": "~5.3",
         "php": ">=5.4"

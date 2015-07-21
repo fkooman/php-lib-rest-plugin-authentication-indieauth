@@ -20,6 +20,7 @@ namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
 use fkooman\Http\Session;
 use fkooman\Http\Request;
+use fkooman\IO\IO;
 use fkooman\Rest\Service;
 use fkooman\Http\RedirectResponse;
 use fkooman\Http\Exception\BadRequestException;
@@ -50,7 +51,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
     /** @var \GuzzleHttp\Client */
     private $client;
 
-    /** @var \fkooman\Rest\Plugin\IndieAuth\IO */
+    /** @var \fkooman\IO\IO */
     private $io;
 
     /** @var array */
@@ -146,7 +147,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                 }
 
                 $clientId = $request->getUrl()->getRootUrl();
-                $stateValue = $this->io->getRandomHex();
+                $stateValue = $this->io->getRandom();
                 $redirectUri = $request->getUrl()->getRootUrl().'_indieauth/callback';
                 $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getPostParameter('redirect_to'));
 

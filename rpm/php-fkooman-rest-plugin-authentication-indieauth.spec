@@ -21,7 +21,6 @@ Requires:   php(language) >= 5.4
 Requires:   php-dom
 Requires:   php-filter
 Requires:   php-libxml
-Requires:   php-openssl
 Requires:   php-pcre
 Requires:   php-spl
 Requires:   php-standard
@@ -30,6 +29,8 @@ Requires:   php-composer(fkooman/rest) >= 1.0.0
 Requires:   php-composer(fkooman/rest) < 2.0.0
 Requires:   php-composer(fkooman/rest-plugin-authentication) >= 1.0.0
 Requires:   php-composer(fkooman/rest-plugin-authentication) < 2.0.0
+Requires:   php-composer(fkooman/io) >= 1.0.0
+Requires:   php-composer(fkooman/io) < 2.0.0
 
 Requires:   php-composer(guzzlehttp/guzzle) >= 5.3
 Requires:   php-composer(guzzlehttp/guzzle) < 6.0

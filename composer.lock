@@ -4,8 +4,47 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "5bb994131b63020d1be1cc18be797ae7",
+    "hash": "4d063101fa0c7a9ee54cbb44a99186cb",
     "packages": [
+        {
+            "name": "fkooman/io",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/fkooman/php-lib-io.git",
+                "reference": "c529a4815a4534c3118bc248e419c2e06f5bed5c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/fkooman/php-lib-io/zipball/c529a4815a4534c3118bc248e419c2e06f5bed5c",
+                "reference": "c529a4815a4534c3118bc248e419c2e06f5bed5c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-date": "*",
+                "ext-openssl": "*",
+                "ext-spl": "*",
+                "php": ">= 5.3.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "fkooman\\IO\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "François Kooman",
+                    "email": "fkooman@tuxed.net"
+                }
+            ],
+            "description": "Simple IO library",
+            "time": "2015-07-21 15:48:18"
+        },
         {
             "name": "fkooman/json",
             "version": "1.0.0",
@@ -47,16 +86,16 @@
         },
         {
             "name": "fkooman/rest",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fkooman/php-lib-rest.git",
-                "reference": "e4fa99403d4c43cfb7f737f0f91c1c00dc81c34b"
+                "reference": "55564781fe97fd3121fccdd7d1250f8b1f267f2b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/e4fa99403d4c43cfb7f737f0f91c1c00dc81c34b",
-                "reference": "e4fa99403d4c43cfb7f737f0f91c1c00dc81c34b",
+                "url": "https://api.github.com/repos/fkooman/php-lib-rest/zipball/55564781fe97fd3121fccdd7d1250f8b1f267f2b",
+                "reference": "55564781fe97fd3121fccdd7d1250f8b1f267f2b",
                 "shasum": ""
             },
             "require": {
@@ -89,7 +128,7 @@
                 }
             ],
             "description": "Simple PHP library for writing REST services.",
-            "time": "2015-07-20 09:13:02"
+            "time": "2015-07-20 21:02:38"
         },
         {
             "name": "fkooman/rest-plugin-authentication",
@@ -351,7 +390,6 @@
         "ext-dom": "*",
         "ext-filter": "*",
         "ext-libxml": "*",
-        "ext-openssl": "*",
         "ext-pcre": "*",
         "ext-spl": "*",
         "php": ">=5.4"

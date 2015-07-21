@@ -130,10 +130,10 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 #            )
 #        );
 
-        $ioStub = $this->getMockBuilder('fkooman\Rest\Plugin\Authentication\IndieAuth\IO')
+        $ioStub = $this->getMockBuilder('fkooman\IO\IO')
                      ->disableOriginalConstructor()
                      ->getMock();
-        $ioStub->method('getRandomHex')->willReturn(
+        $ioStub->method('getRandom')->willReturn(
             '12345abcdef'
         );
 
