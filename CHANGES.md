@@ -1,66 +1,8 @@
 # Release History
 
-## 1.0.0
-- update `fkooman/rest` and use `fkooman/rest-plugin-authentication`
+## 1.0.1 (...)
+- no longer explicitly enable the `ReferrerCheckPlugin` as it is enabled by
+  default now and more intelligent
 
-## 0.5.2
-- rework preventing redirects to non-https URLs available now in new Guzzle
-- add some unit tests for testing HTTPS to HTTP redirect
-
-## 0.5.1
-- update `guzzlehttp/guzzle`
-- add all module dependencies to composer.json and spec file
-
-## 0.5.0
-- update `fkooman/rest`
-
-## 0.4.0
-- update `fkooman/rest` dependency
-- `indieauth/logout` is now a POST instead of GET
-- be more compliant with OAuth (implement `response_type` authorize parameter
-  and `grant_type` POST parameter)
-
-## 0.3.0
-- support redirecting to authentication page when not authenticated instead 
-  of showing error page
-- support requesting `scope`, and thus `access_token` from the IndieAuth 
-  instance.
-- **BREAKING**: user (and `access_token`) information is now returned in 
-  `IndieInfo` object instead of `UserInfo` object to accommodate for the 
-  `access_token`.
-- add an example to also request `scope` and `access_token`
-
-## 0.2.2
-- update to latest `fkooman/rest` to support optional authentication
-
-## 0.2.1
-- update dependencies and spec file
-
-## 0.2.0
-- implement logout support
-- add CSRF protection for auth and logout endpoints
-- update `fkooman/rest`
-- **BREAKING**: uniform redirectTo support, `redirect_to` is now set in post to 
-  `indieauth/auth` and no longer through `IndieAuthAuthentication` constructor. 
-  For logout the query parameter `redirect_to` is used
-- validate and normalize the `redirect_to` URL
-
-## 0.1.3
-- support `application/x-www-form-urlencoded` response to verify request again
-
-## 0.1.2
-- for now break `indieauth.com` until they fix the `Accept` header on verify 
-  endpoint and no longer require `state` POST parameter on verify
-- rework session usage, remove redundant `state` POST variable when verifying
-  code
-- require normalized version of provided `me` field as `me` in the verification
-  response (also must be fixed at `indieauth.com` to follow normalization 
-  rules
-- default to `https://indiecert.net/auth` when discovery is disabled or 
-  fails
-
-## 0.1.1
-- allow disabling discovery (distributed IndieAuth)
-
-## 0.1.0 
+## 1.0.0 (2015-07-21)
 - initial release

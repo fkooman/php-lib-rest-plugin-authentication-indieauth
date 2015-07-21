@@ -180,7 +180,6 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
             array(
                 __CLASS__ => array('enabled' => false),
                 'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array('enabled' => false),
-                'fkooman\Rest\Plugin\ReferrerCheckPlugin' => array('enabled' => true),
             )
         );
 
@@ -257,7 +256,6 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
             array(
                 __CLASS__ => array('enabled' => false),
                 'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array('enabled' => false),
-                'fkooman\Rest\Plugin\ReferrerCheckPlugin' => array('enabled' => true),
             )
         );
     }
