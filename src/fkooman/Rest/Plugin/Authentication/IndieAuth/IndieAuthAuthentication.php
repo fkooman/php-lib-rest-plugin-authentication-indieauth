@@ -85,7 +85,20 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
 
     public function isAttempt(Request $request)
     {
-        return null !== $this->session->get('me');
+        // if the correct session parameters are set and the IndieAuth 
+        // authentication already succeeded
+        if (null !== $this->session->get('me')) {
+            return true;
+        }
+
+        if (null !== $this->unauthorizedRedirectUri) {
+            // no (direct) attempt, but we have the ability to redirect the 
+            // user to a login page, so we define this as there being an 
+            // attempt...
+            return true;
+        }
+
+        return false;
     }
 
     public function setUnauthorizedRedirectUri($unauthorizedRedirectUri)
@@ -277,13 +290,25 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
         }
 
         if (null !== $this->unauthorizedRedirectUri) {
+            // we have the ability to redirect the user to a login page, do 
+            // that! 
             $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $this->unauthorizedRedirectUri);
+
+            $querySeparator = false === strpos($redirectTo, '?') ? '?' : '&';
+
+            // add the "me" parameter to the redirectTo URL if it is set
+            $me = $request->getUrl()->getQueryParameter('me');
+            if (null !== $me) {
+                $redirectTo = sprintf('%s%sme=%s', $redirectTo, $querySeparator, $me);
+                $querySeparator = '&';
+            }
 
             return new RedirectResponse(
                 sprintf(
-                    '%s?redirect_to=%s',
+                    '%s%sredirect_to=%s',
                     $redirectTo,
-                    $request->getUrl()->toString()
+                    $querySeparator,
+                    urlencode($request->getUrl()->toString())
                 ),
                 302
             );
