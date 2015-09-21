@@ -1,6 +1,6 @@
 # Release History
 
-## 1.0.1 (...)
+## 1.0.1 (2015-09-21)
 - make `isAttempt()` also return true if an unauthorized redirect uri is set
   because that allows for a redirect to the login page
 - `urlencode()` the `redirect_to` parameter to be able to redirect to URLs 
