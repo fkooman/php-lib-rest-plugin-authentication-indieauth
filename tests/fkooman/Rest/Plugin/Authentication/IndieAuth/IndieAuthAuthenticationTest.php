@@ -219,6 +219,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
             array(
                 'HTTP/1.1 400 Bad Request',
                 'Content-Type: application/json',
+                'Content-Length: 32',
                 '',
                 '{"error":"no session available"}',
             ),
@@ -255,6 +256,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
             array(
                 'HTTP/1.1 400 Bad Request',
                 'Content-Type: application/json',
+                'Content-Length: 30',
                 '',
                 '{"error":"non matching state"}',
             ),
