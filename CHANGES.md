@@ -1,5 +1,8 @@
 # Release History
 
+## 1.0.2 (2015-10-13)
+- update tests to work with new `fkooman/http`
+
 ## 1.0.1 (2015-09-21)
 - make `isAttempt()` also return true if an unauthorized redirect uri is set
   because that allows for a redirect to the login page
