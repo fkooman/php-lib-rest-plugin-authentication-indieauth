@@ -112,7 +112,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                 $clientId = $request->getUrl()->getRootUrl();
                 $stateValue = $this->io->getRandom();
                 $redirectUri = $request->getUrl()->getRootUrl().'_auth/indieauth/callback';
-                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getPostParameter('redirect_to'));
+                $redirectTo = self::getRedirectTo($request);
 
                 $authSession = array(
                     'client_id' => $clientId,
@@ -183,7 +183,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                     )
                 );
 
-                $responseData = $this->decodeResponse($this->client->send($verifyRequest));
+                $responseData = self::decodeResponse($this->client->send($verifyRequest));
 
                 if (!is_array($responseData) || !array_key_exists('me', $responseData)) {
                     throw new RuntimeException('"me" field not found in response');
@@ -215,7 +215,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
             '/_auth/indieauth/logout',
             function (Request $request) {
                 $this->session->destroy();
-                $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getUrl()->getQueryParameter('redirect_to'));
+                $redirectTo = self::getRedirectTo($request);
 
                 return new RedirectResponse($redirectTo, 302);
             },
@@ -244,7 +244,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
         return $response;
     }
 
-    private function decodeResponse(ResponseInterface $response)
+    private static function decodeResponse(ResponseInterface $response)
     {
         $contentType = $response->getHeader('Content-Type');
 
@@ -261,5 +261,16 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
         }
 
         throw new RuntimeException('unexpected content type from verify endpoint');
+    }
+
+    private static function getRedirectTo(Request $request)
+    {
+        $redirectTo = $request->getPostParameter('redirect_to');
+        if (is_null($redirectTo)) {
+            $redirectTo = $request->getUrl()->getRootUrl();
+        }
+        InputValidation::validateRedirectTo($redirectTo);
+
+        return $redirectTo;
     }
 }

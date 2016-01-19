@@ -45,28 +45,11 @@ class InputValidation
         return $code;
     }
 
-    public static function validateRedirectTo($rootUrl, $redirectTo)
+    public static function validateRedirectTo($redirectTo)
     {
-        // no redirectTo specified
-        if (null === $redirectTo) {
-            $redirectTo = $rootUrl;
-        }
-
-        // if redirectTo starts with a '/' append it to rootUrl
-        if (0 === strpos($redirectTo, '/')) {
-            $redirectTo = $rootUrl.substr($redirectTo, 1);
-        }
-
         if (false === filter_var($redirectTo, FILTER_VALIDATE_URL)) {
             throw new BadRequestException(sprintf('invalid redirect_to URL "%s"', $redirectTo));
         }
-
-        // URL needs to start with absRoot
-        if (0 !== strpos($redirectTo, $rootUrl)) {
-            throw new BadRequestException('redirect_to needs to point to a URL relative to the application root');
-        }
-
-        return $redirectTo;
     }
 
     public static function validateMe($me)

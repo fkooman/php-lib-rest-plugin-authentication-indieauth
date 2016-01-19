@@ -149,6 +149,7 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
             ),
             array(
                 'me' => 'https://foo.example.org/',
+                //'redirect_to' => 'http://foo.example.org/',
             )
         );
         $service = new Service();
@@ -256,6 +257,44 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('https://foo.example.org/', $testSession->get('_auth_indieauth_me'));
         $this->assertNull($testSession->get('_auth_indieauth_session'));
+    }
+
+    public function testLogout()
+    {
+        $request = new Request(
+            array(
+                'SERVER_NAME' => 'www.example.org',
+                'SERVER_PORT' => 80,
+                'HTTP_ACCEPT' => 'text/html',
+                'QUERY_STRING' => '',
+                'REQUEST_URI' => '/_auth/indieauth/logout',
+                'SCRIPT_NAME' => '/index.php',
+                'HTTP_REFERER' => 'http://www.example.org/',
+                'PATH_INFO' => '/_auth/indieauth/logout',
+                'REQUEST_METHOD' => 'POST',
+            ),
+            array(
+                'redirect_to' => 'http://elsewhere.example.org/',
+            )
+        );
+        $service = new Service();
+        $testSession = new TestSession();
+        $indieAuth = $this->getIndieAuth($testSession);
+        $indieAuth->setAuthUri('https://auth.example.org/auth');
+        $ap = new AuthenticationPlugin();
+        $ap->register($indieAuth, 'indieauth');
+        $service->getPluginRegistry()->registerDefaultPlugin($ap);
+        $response = $service->run($request);
+        $this->assertSame(
+            array(
+                'HTTP/1.1 302 Found',
+                'Content-Type: text/html;charset=UTF-8',
+                'Location: http://elsewhere.example.org/',
+                '',
+                '',
+            ),
+            $response->toArray()
+        );
     }
 
 #    public function testVerifyWrongUser()
