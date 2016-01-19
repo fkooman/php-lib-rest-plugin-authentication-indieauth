@@ -91,9 +91,9 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'Content-Type: text/html;charset=UTF-8',
                 'X-Frame-Options: DENY',
                 "Content-Security-Policy: default-src 'self'",
-                'Content-Length: 62',
+                'Content-Length: 102',
                 '',
-                '{"indieAuthAuth":{"login_hint":"https:\/\/foo.example.org\/"}}',
+                '{"indieAuthAuth":{"login_hint":"https:\/\/foo.example.org\/","root_url":"http:\/\/www.example.org\/"}}',
             ),
             $response->toArray()
         );
