@@ -237,7 +237,7 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                 'indieAuthAuth',
                 array(
                     'login_hint' => $request->getUrl()->getQueryParameter('login_hint'),
-                    'root_url' => $request->getUrl()->getRootUrl(),
+                    '_auth_indieauth_root_url' => $request->getUrl()->getRootUrl(),
                 )
             )
         );
