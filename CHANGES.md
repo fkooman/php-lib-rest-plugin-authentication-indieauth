@@ -1,5 +1,9 @@
 # Release History
 
+## 2.0.0 (...)
+- update API to new `fkooman/rest-plugin-authentication`
+- lots of code cleanup
+
 ## 1.0.2 (2015-10-13)
 - update tests to work with new `fkooman/http`
 

@@ -16,17 +16,24 @@
  */
 namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
-use fkooman\Rest\Service;
+require_once __DIR__.'/Test/TestTemplateManager.php';
+require_once __DIR__.'/Test/TestSession.php';
+
+use PHPUnit_Framework_TestCase;
+use fkooman\Rest\Plugin\Authentication\IndieAuth\Test\TestTemplateManager;
+use fkooman\Http\SessionInterface;
+use fkooman\Rest\Plugin\Authentication\IndieAuth\Test\TestSession;
 use fkooman\Http\Request;
+use fkooman\Rest\Service;
+use fkooman\Rest\Plugin\Authentication\AuthenticationPlugin;
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
 use GuzzleHttp\Message\Response;
 use GuzzleHttp\Stream\Stream;
-use PHPUnit_Framework_TestCase;
 
 class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
 {
-    public function testIndieAuthAuthenticated()
+    public function testAuth()
     {
         $request = new Request(
             array(
@@ -38,278 +45,190 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
                 'REQUEST_METHOD' => 'GET',
             )
         );
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-
-        $map = array(
-            array(
-                'auth',
-                array(
-                    'client_id' => 'http://www.example.org/',
-                    'state' => '12345abcdef',
-                    'redirect_to' => 'http://www.example.org/',
-                    'auth_uri' => 'https://indiefoo.net/auth',
-                ),
-            ),
-            array('me', 'https://mydomain.org/'),
-        );
-        $sessionStub->method('get')
-             ->will($this->returnValueMap($map));
-
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->init(new Service());
-        $userInfo = $indieAuthAuth->execute($request, array());
-        $this->assertEquals('https://mydomain.org/', $userInfo->getUserId());
+        $testSession = new TestSession();
+        $testSession->set('_auth_indieauth_me', 'https://foo.example.org/');
+        $indieAuth = $this->getIndieAuth($testSession);
+        $this->assertEquals('https://foo.example.org/', $indieAuth->isAuthenticated($request)->getUserId());
     }
 
-    /**
-     * @expectedException fkooman\Http\Exception\UnauthorizedException
-     * @expectedExceptionMessage no_credentials
-     */
-    public function testIndieAuthNotAuthenticated()
+#    public function testAuthNonMatchingLoginHint()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => 'login_hint=bar',
+#                'REQUEST_URI' => '/?login_hint=bar',
+#                'SCRIPT_NAME' => '/index.php',
+#                'REQUEST_METHOD' => 'GET',
+#            )
+#        );
+#        $testSession = new TestSession();
+#        $testSession->set('_auth_form_user_name', 'foo');
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $this->assertFalse($indieAuth->isAuthenticated($request));
+#    }
+
+    public function testAuthNotAuthenticated()
     {
         $request = new Request(
             array(
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
-                'QUERY_STRING' => '',
-                'REQUEST_URI' => '/',
+                'QUERY_STRING' => 'login_hint=https://foo.example.org/',
+                'REQUEST_URI' => '/?login_hint=https://foo.example.org/',
                 'SCRIPT_NAME' => '/index.php',
                 'REQUEST_METHOD' => 'GET',
             )
         );
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-
-        $indieAuthAuth->init(new Service());
-        $indieAuthAuth->execute($request, array());
-    }
-
-    public function testIndieAuthNotAuthenticatedUnauthorizedRedirectUri()
-    {
-        $request = new Request(
-            array(
-                'SERVER_NAME' => 'www.example.org',
-                'SERVER_PORT' => 80,
-                'QUERY_STRING' => 'me=https://foo.example.org/',
-                'REQUEST_URI' => '/foo?me=https://foo.example.org/',
-                'SCRIPT_NAME' => '/index.php',
-                'REQUEST_METHOD' => 'GET',
-            )
-        );
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->setUnauthorizedRedirectUri('/foo/bar?action=def');
-
-        $indieAuthAuth->init(new Service());
-        $this->assertTrue($indieAuthAuth->isAttempt($request));
-        $response = $indieAuthAuth->execute($request, array());
+        $testSession = new TestSession();
+        $indieAuth = $this->getIndieAuth($testSession);
+        $this->assertFalse($indieAuth->isAuthenticated($request));
+        $response = $indieAuth->requestAuthentication($request);
         $this->assertSame(
             array(
-                'HTTP/1.1 302 Found',
+                'HTTP/1.1 200 OK',
                 'Content-Type: text/html;charset=UTF-8',
-                'Location: http://www.example.org/foo/bar?action=def&me=https://foo.example.org/&redirect_to=http%3A%2F%2Fwww.example.org%2Ffoo%3Fme%3Dhttps%3A%2F%2Ffoo.example.org%2F',
+                'X-Frame-Options: DENY',
+                "Content-Security-Policy: default-src 'self'",
+                'Content-Length: 62',
                 '',
-                '',
+                '{"indieAuthAuth":{"login_hint":"https:\/\/foo.example.org\/"}}',
             ),
             $response->toArray()
         );
+        $this->assertNull($testSession->get('_auth_indieauth_me'));
     }
 
-    public function testIndieAuthAuthRequest()
+#    public function testAuthNotAuthenticatedAfterAttempt()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => 'login_hint=foo',
+#                'REQUEST_URI' => '/?login_hint=foo',
+#                'SCRIPT_NAME' => '/index.php',
+#                'REQUEST_METHOD' => 'GET',
+#            )
+#        );
+#        $testSession = new TestSession();
+#        $testSession->set('_auth_form_invalid_credentials', true);
+#        $testSession->set('_auth_form_invalid_user_name', 'fooz');
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $this->assertFalse($indieAuth->isAuthenticated($request));
+#        $response = $indieAuth->requestAuthentication($request);
+#        $this->assertSame(
+#            array(
+#                'HTTP/1.1 200 OK',
+#                'Content-Type: text/html;charset=UTF-8',
+#                'X-Frame-Options: DENY',
+#                "Content-Security-Policy: default-src 'self'",
+#                'Content-Length: 109',
+#                '',
+#                '{"formAuth":{"login_hint":"foo","_auth_form_invalid_credentials":true,"_auth_form_invalid_user_name":"fooz"}}',
+#            ),
+#            $response->toArray()
+#        );
+#        $this->assertNull($testSession->get('_auth_form_user_name'));
+#    }
+
+    public function testAuthRequest()
     {
         $request = new Request(
             array(
                 'SERVER_NAME' => 'www.example.org',
-                'SERVER_PORT' => 443,
+                'SERVER_PORT' => 80,
+                'HTTP_ACCEPT' => 'text/html',
                 'QUERY_STRING' => '',
-                'REQUEST_URI' => '/_indieauth/auth',
+                'REQUEST_URI' => '/_auth/indieauth/auth',
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/_indieauth/auth',
+                'HTTP_REFERER' => 'http://www.example.org/',
+                'PATH_INFO' => '/_auth/indieauth/auth',
                 'REQUEST_METHOD' => 'POST',
-                'HTTP_REFERER' => 'https://www.example.org/',
-                'HTTPS' => 'on',
             ),
             array(
-                'me' => 'mydomain.org',
+                'me' => 'https://foo.example.org/',
             )
         );
-
-        $ioStub = $this->getMockBuilder('fkooman\IO\IO')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-        $ioStub->method('getRandom')->willReturn(
-            '12345abcdef'
-        );
-
-        $client = new Client();
-        $mock = new Mock(
-            array(
-                new Response(
-                    200,
-                    array('Content-Type' => 'text/html'),
-                    Stream::factory(
-                        file_get_contents(__DIR__.'/data/fkooman.html')
-                    )
-                ),
-            )
-        );
-        $client->getEmitter()->attach($mock);
-
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-
         $service = new Service();
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->setIo($ioStub);
-        $indieAuthAuth->setClient($client);
-        $indieAuthAuth->init($service);
-
+        $testSession = new TestSession();
+        $indieAuth = $this->getIndieAuth($testSession);
+        $indieAuth->setAuthUri('https://auth.example.org/auth');
+        $ap = new AuthenticationPlugin();
+        $ap->register($indieAuth, 'indieauth');
+        $service->getPluginRegistry()->registerDefaultPlugin($ap);
         $response = $service->run($request);
-
-        $this->assertEquals(
+        $this->assertSame(
             array(
                 'HTTP/1.1 302 Found',
                 'Content-Type: text/html;charset=UTF-8',
-                'Location: https://indiecert.net/auth?client_id=https%3A%2F%2Fwww.example.org%2F&response_type=code&me=https%3A%2F%2Fmydomain.org%2F&redirect_uri=https%3A%2F%2Fwww.example.org%2F_indieauth%2Fcallback&state=12345abcdef',
+                'Location: https://auth.example.org/auth?client_id=http%3A%2F%2Fwww.example.org%2F&response_type=code&me=https%3A%2F%2Ffoo.example.org%2F&redirect_uri=http%3A%2F%2Fwww.example.org%2F_auth%2Findieauth%2Fcallback&state=abcd1234',
                 '',
                 '',
             ),
             $response->toArray()
         );
-    }
-
-    public function testIndieAuthCallbackNoSessionState()
-    {
-        $request = new Request(
-            array(
-                'SERVER_NAME' => 'www.example.org',
-                'SERVER_PORT' => 80,
-                'QUERY_STRING' => 'code=54321',
-                'REQUEST_URI' => '/_indieauth/callback?code=54321',
-                'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/_indieauth/callback',
-                'REQUEST_METHOD' => 'GET',
-            )
-        );
-
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-
-        $service = new Service();
-
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->init($service);
-
         $this->assertSame(
             array(
-                'HTTP/1.1 400 Bad Request',
-                'Content-Type: application/json',
-                'Content-Length: 32',
-                '',
-                '{"error":"no session available"}',
+                'client_id' => 'http://www.example.org/',
+                'auth_uri' => 'https://auth.example.org/auth',
+                'me' => 'https://foo.example.org/',
+                'state' => 'abcd1234',
+                'redirect_uri' => 'http://www.example.org/_auth/indieauth/callback',
+                'redirect_to' => 'http://www.example.org/',
             ),
-            $service->run($request)->toArray()
+            $testSession->get('_auth_indieauth_session')
         );
+        $this->assertNull($testSession->get('_auth_indieauth_me'));
     }
 
-    public function testIndieAuthCallbackNonMatchingState()
+    public function testCallback()
     {
+        $q = array(
+            'state' => 'abcd1234',
+            'code' => '1234',
+        );
+
         $request = new Request(
             array(
                 'SERVER_NAME' => 'www.example.org',
                 'SERVER_PORT' => 80,
-                'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
+                'HTTP_ACCEPT' => 'text/html',
+                'QUERY_STRING' => http_build_query($q),
+                'REQUEST_URI' => sprintf('/_auth/indieauth/callback?%s', http_build_query($q)),
                 'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/_indieauth/callback',
+                'HTTP_REFERER' => 'http://www.example.org/',
+                'PATH_INFO' => '/_auth/indieauth/callback',
                 'REQUEST_METHOD' => 'GET',
             )
         );
-
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-        $sessionStub->method('get')->willReturn(array('state' => '54321abcdef'));
 
         $service = new Service();
-
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->init($service);
-
-        $this->assertSame(
+        $testSession = new TestSession();
+        $testSession->set(
+            '_auth_indieauth_session',
             array(
-                'HTTP/1.1 400 Bad Request',
-                'Content-Type: application/json',
-                'Content-Length: 30',
-                '',
-                '{"error":"non matching state"}',
-            ),
-            $service->run($request)->toArray()
-        );
-    }
-
-    public function testIndieAuthCallbackJson()
-    {
-        $request = new Request(
-            array(
-                'SERVER_NAME' => 'www.example.org',
-                'SERVER_PORT' => 80,
-                'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
-                'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/_indieauth/callback',
-                'REQUEST_METHOD' => 'GET',
-                'HTTP_ACCEPT' => 'application/json',
+                'client_id' => 'http://www.example.org/',
+                'auth_uri' => 'https://auth.example.org/auth',
+                'me' => 'https://foo.example.org/',
+                'state' => 'abcd1234',
+                'redirect_uri' => 'http://www.example.org/_auth/indieauth/callback',
+                'redirect_to' => 'http://www.example.org/',
             )
         );
-
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-        $map = array(
-            array(
-                'auth',
-                array(
-                    'client_id' => 'http://www.example.org/',
-                    'state' => '12345abcdef',
-                    'redirect_uri' => 'http://www.example.org/_indieauth/callback',
-                    'redirect_to' => 'http://www.example.org/',
-                    'auth_uri' => 'https://indiefoo.net/auth',
-                    'me' => 'https://mydomain.org/',
-                ),
-            ),
-            array('me', 'https://mydomain.org/'),
-        );
-        $sessionStub->method('get')
-             ->will($this->returnValueMap($map));
 
         $client = new Client();
         $mock = new Mock(
             array(
                 new Response(
                     200,
-                    array('Content-Type' => 'application/json'),
+                    array(
+                        'Content-Type' => 'application/json',
+                    ),
                     Stream::factory(
                         json_encode(
-                            array(
-                                'me' => 'https://mydomain.org/',
-                            )
+                            array('me' => 'https://foo.example.org/')
                         )
                     )
                 ),
@@ -317,15 +236,14 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
         );
         $client->getEmitter()->attach($mock);
 
-        $service = new Service();
-        $indieAuthAuth = new IndieAuthAuthentication();
-
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->setClient($client);
-        $indieAuthAuth->init($service);
-
+        $indieAuth = $this->getIndieAuth($testSession, $client);
+        $indieAuth->setAuthUri('https://auth.example.org/');
+        $ap = new AuthenticationPlugin();
+        $ap->register($indieAuth, 'indieauth');
+        $service->getPluginRegistry()->registerDefaultPlugin($ap);
         $response = $service->run($request);
-        $this->assertEquals(
+
+        $this->assertSame(
             array(
                 'HTTP/1.1 302 Found',
                 'Content-Type: text/html;charset=UTF-8',
@@ -335,73 +253,178 @@ class IndieAuthAuthenticationTest extends PHPUnit_Framework_TestCase
             ),
             $response->toArray()
         );
+
+        $this->assertEquals('https://foo.example.org/', $testSession->get('_auth_indieauth_me'));
+        $this->assertNull($testSession->get('_auth_indieauth_session'));
     }
 
-    public function testIndieAuthCallbackForm()
+#    public function testVerifyWrongUser()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => '',
+#                'HTTP_ACCEPT' => 'text/html',
+#                'REQUEST_URI' => '/_auth/form/verify',
+#                'SCRIPT_NAME' => '/index.php',
+#                'HTTP_REFERER' => 'http://www.example.org/',
+#                'PATH_INFO' => '/_auth/form/verify',
+#                'REQUEST_METHOD' => 'POST',
+#            ),
+#            array(
+#                'userName' => 'fooz',
+#                'userPass' => 'bar',
+#            )
+#        );
+#        $service = new Service();
+#        $testSession = new TestSession();
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $ap = new AuthenticationPlugin();
+#        $ap->register($indieAuth, 'form');
+#        $service->getPluginRegistry()->registerDefaultPlugin($ap);
+#        $response = $service->run($request);
+#        $this->assertSame(
+#            array(
+#                'HTTP/1.1 302 Found',
+#                'Content-Type: text/html;charset=UTF-8',
+#                'Location: http://www.example.org/',
+#                '',
+#                '',
+#            ),
+#            $response->toArray()
+#        );
+#        $this->assertTrue($testSession->get('_auth_form_invalid_credentials'));
+#        $this->assertSame('fooz', $testSession->get('_auth_form_invalid_user_name'));
+#        $this->assertNull($testSession->get('_auth_form_user_name'));
+#    }
+
+#    public function testVerifyWrongPass()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => '',
+#                'HTTP_ACCEPT' => 'text/html',
+#                'REQUEST_URI' => '/_auth/form/verify',
+#                'SCRIPT_NAME' => '/index.php',
+#                'HTTP_REFERER' => 'http://www.example.org/',
+#                'PATH_INFO' => '/_auth/form/verify',
+#                'REQUEST_METHOD' => 'POST',
+#            ),
+#            array(
+#                'userName' => 'foo',
+#                'userPass' => 'baz',
+#            )
+#        );
+#        $service = new Service();
+#        $testSession = new TestSession();
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $ap = new AuthenticationPlugin();
+#        $ap->register($indieAuth, 'form');
+#        $service->getPluginRegistry()->registerDefaultPlugin($ap);
+#        $response = $service->run($request);
+#        $this->assertSame(
+#            array(
+#                'HTTP/1.1 302 Found',
+#                'Content-Type: text/html;charset=UTF-8',
+#                'Location: http://www.example.org/',
+#                '',
+#                '',
+#            ),
+#            $response->toArray()
+#        );
+#        $this->assertTrue($testSession->get('_auth_form_invalid_credentials'));
+#    }
+
+#    public function testLogout()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => '',
+#                'HTTP_ACCEPT' => 'text/html',
+#                'REQUEST_URI' => '/_auth/form/logout',
+#                'SCRIPT_NAME' => '/index.php',
+#                'PATH_INFO' => '/_auth/form/logout',
+#                'REQUEST_METHOD' => 'POST',
+#                'HTTP_REFERER' => 'http://www.example.org/',
+#            )
+#        );
+#        $service = new Service();
+#        $testSession = new TestSession();
+#        $testSession->set('_auth_form_user_name', 'foo');
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $ap = new AuthenticationPlugin();
+#        $ap->register($indieAuth, 'form');
+#        $service->getPluginRegistry()->registerDefaultPlugin($ap);
+#        $response = $service->run($request);
+#        $this->assertSame(
+#            array(
+#                'HTTP/1.1 302 Found',
+#                'Content-Type: text/html;charset=UTF-8',
+#                'Location: http://www.example.org/',
+#                '',
+#                '',
+#            ),
+#            $response->toArray()
+#        );
+#        $this->assertNull($testSession->get('_auth_form_user_name'));
+#    }
+
+#    public function testLogoutRedirectTo()
+#    {
+#        $request = new Request(
+#            array(
+#                'SERVER_NAME' => 'www.example.org',
+#                'SERVER_PORT' => 80,
+#                'QUERY_STRING' => '',
+#                'HTTP_ACCEPT' => 'text/html',
+#                'REQUEST_URI' => '/_auth/form/logout',
+#                'SCRIPT_NAME' => '/index.php',
+#                'PATH_INFO' => '/_auth/form/logout',
+#                'REQUEST_METHOD' => 'POST',
+#                'HTTP_REFERER' => 'http://www.example.org/',
+#            ),
+#            array(
+#                'redirect_to' => 'http://my-domain.org/loggedOut',
+#            )
+#        );
+#        $service = new Service();
+#        $testSession = new TestSession();
+#        $testSession->set('_auth_form_user_name', 'foo');
+#        $indieAuth = $this->getIndieAuth($testSession);
+#        $ap = new AuthenticationPlugin();
+#        $ap->register($indieAuth, 'form');
+#        $service->getPluginRegistry()->registerDefaultPlugin($ap);
+#        $response = $service->run($request);
+#        $this->assertSame(
+#            array(
+#                'HTTP/1.1 302 Found',
+#                'Content-Type: text/html;charset=UTF-8',
+#                'Location: http://my-domain.org/loggedOut',
+#                '',
+#                '',
+#            ),
+#            $response->toArray()
+#        );
+#        $this->assertNull($testSession->get('_auth_form_user_name'));
+#    }
+
+    private function getIndieAuth(SessionInterface $session, Client $client = null)
     {
-        $request = new Request(
-            array(
-                'SERVER_NAME' => 'www.example.org',
-                'SERVER_PORT' => 80,
-                'QUERY_STRING' => 'code=54321&state=12345abcdef',
-                'REQUEST_URI' => '/_indieauth/callback?code=54321&state=12345abcdef',
-                'SCRIPT_NAME' => '/index.php',
-                'PATH_INFO' => '/_indieauth/callback',
-                'REQUEST_METHOD' => 'GET',
-                'HTTP_ACCEPT' => 'application/x-www-form-urlencoded',
-            )
+        $io = $this->getMockBuilder('fkooman\IO\IO')->getMock();
+        $io->method('getRandom')->will($this->returnValue('abcd1234'));
+
+        $indieAuth = new IndieAuthAuthentication(
+            new TestTemplateManager(),
+            $client,
+            $session,
+            $io
         );
 
-        $sessionStub = $this->getMockBuilder('fkooman\Http\Session')
-                     ->disableOriginalConstructor()
-                     ->getMock();
-        $map = array(
-            array(
-                'auth',
-                array(
-                    'state' => '12345abcdef',
-                    'redirect_to' => 'http://www.example.org/',
-                    'auth_uri' => 'https://indiefoo.net/auth',
-                    'me' => 'https://mydomain.org/',
-                    'client_id' => 'http://www.example.org/',
-                    'redirect_uri' => 'http://www.example.org/_indieauth/callback',
-                ),
-            ),
-            array('me', 'https://mydomain.org/'),
-        );
-        $sessionStub->method('get')
-             ->will($this->returnValueMap($map));
-
-        $client = new Client();
-        $mock = new Mock(
-            array(
-                new Response(
-                    200,
-                    array('Content-Type' => 'application/x-www-form-urlencoded'),
-                    Stream::factory(
-                        'me=https%3A%2F%2Fmydomain.org%2F'
-                    )
-                ),
-            )
-        );
-        $client->getEmitter()->attach($mock);
-
-        $service = new Service();
-        $indieAuthAuth = new IndieAuthAuthentication();
-        $indieAuthAuth->setSession($sessionStub);
-        $indieAuthAuth->setClient($client);
-        $indieAuthAuth->init($service);
-
-        $response = $service->run($request);
-        $this->assertEquals(
-            array(
-                'HTTP/1.1 302 Found',
-                'Content-Type: text/html;charset=UTF-8',
-                'Location: http://www.example.org/',
-                '',
-                '',
-            ),
-            $response->toArray()
-        );
+        return $indieAuth;
     }
 }

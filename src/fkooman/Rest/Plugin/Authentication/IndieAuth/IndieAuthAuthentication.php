@@ -17,150 +17,101 @@
  */
 namespace fkooman\Rest\Plugin\Authentication\IndieAuth;
 
+use fkooman\Http\SessionInterface;
 use fkooman\Http\Session;
 use fkooman\Http\Request;
 use fkooman\IO\IO;
+use fkooman\Http\Response;
 use fkooman\Rest\Service;
 use fkooman\Http\RedirectResponse;
 use fkooman\Http\Exception\BadRequestException;
-use fkooman\Http\Exception\UnauthorizedException;
 use fkooman\Rest\Plugin\Authentication\AuthenticationPluginInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\ResponseInterface;
 use RuntimeException;
+use fkooman\Tpl\TemplateManagerInterface;
 
 class IndieAuthAuthentication implements AuthenticationPluginInterface
 {
-    /** @var string */
-    private $authUri;
-
-    /**
-     * The URL to redirect to if no authentication is attempted.
-     *
-     * @var string
-     */
-    private $unauthorizedRedirectUri;
-
-    /** @var bool */
-    private $discoveryEnabled;
-
-    /** @var \fkooman\Http\Session */
-    private $session;
+    /** @var \fkooman\Tpl\TemplateManagerInterface */
+    private $templateManager;
 
     /** @var \GuzzleHttp\Client */
     private $client;
 
+    /** @var \fkooman\Http\SessionInterface */
+    private $session;
+
     /** @var \fkooman\IO\IO */
     private $io;
 
-    /** @var array */
-    private $authParams;
+    /** @var string */
+    private $authUri;
 
-    public function __construct($authUri = null, array $authParams = array())
+    public function __construct(TemplateManagerInterface $templateManager, Client $client = null, SessionInterface $session = null, IO $io = null)
     {
-        if (null === $authUri) {
-            $authUri = 'https://indiecert.net/auth';
+        $this->templateManager = $templateManager;
+
+        if (null === $client) {
+            $client = new Client();
         }
-        $this->authUri = $authUri;
-
-        $this->unauthorizedRedirectUri = null;
-        $this->discoveryEnabled = true;
-
-        if (!array_key_exists('realm', $authParams)) {
-            $authParams['realm'] = 'Protected Resource';
-        }
-        $this->authParams = $authParams;
-    }
-
-    public function getScheme()
-    {
-        return 'IndieAuth';
-    }
-
-    public function getAuthParams()
-    {
-        return $this->authParams;
-    }
-
-    public function isAttempt(Request $request)
-    {
-        // if the correct session parameters are set and the IndieAuth 
-        // authentication already succeeded
-        if (null !== $this->session->get('me')) {
-            return true;
-        }
-
-        if (null !== $this->unauthorizedRedirectUri) {
-            // no (direct) attempt, but we have the ability to redirect the 
-            // user to a login page, so we define this as there being an 
-            // attempt...
-            return true;
-        }
-
-        return false;
-    }
-
-    public function setUnauthorizedRedirectUri($unauthorizedRedirectUri)
-    {
-        $this->unauthorizedRedirectUri = $unauthorizedRedirectUri;
-    }
-
-    public function setDiscovery($discoveryEnabled)
-    {
-        $this->discoveryEnabled = (bool) $discoveryEnabled;
-    }
-
-    public function setSession(Session $session)
-    {
-        $this->session = $session;
-    }
-
-    public function setClient(Client $client)
-    {
         $this->client = $client;
+
+        if (null === $session) {
+            $session = new Session('indieauth');
+        }
+        $this->session = $session;
+
+        if (null === $io) {
+            $io = new IO();
+        }
+        $this->io = $io;
+
+        $this->authUri = null;
     }
 
-    public function setIO(IO $io)
+    /**
+     * Set the URL to use to authenticate the user. Doing this will disable 
+     * discovery.
+     */
+    public function setAuthUri($authUri)
     {
-        $this->io = $io;
+        $this->authUri = $authUri;
+    }
+
+    public function isAuthenticated(Request $request)
+    {
+        $authIndieAuthMe = $this->session->get('_auth_indieauth_me');
+        if (is_null($authIndieAuthMe)) {
+            return false;
+        }
+
+        return new IndieInfo($authIndieAuthMe);
     }
 
     public function init(Service $service)
     {
-        if (null === $this->session) {
-            $this->session = new Session('IndieAuth');
-        }
-        if (null === $this->client) {
-            $this->client = new Client();
-        }
-        if (null === $this->io) {
-            $this->io = new IO();
-        }
-
         $service->post(
-            '/_indieauth/auth',
+            '/_auth/indieauth/auth',
             function (Request $request) {
-                // delete possibly stale auth session
-                $this->session->delete('auth');
-
-                // new attempt will override current 'me'
-                $this->session->delete('me');
+                $this->session->delete('_auth_indieauth_me');
+                $this->session->delete('_auth_indieauth_session');
 
                 $me = InputValidation::validateMe($request->getPostParameter('me'));
 
-                // if discovery is enabled, we try find the authUri
-                if ($this->discoveryEnabled) {
+                if (is_null($this->authUri)) {
+                    // no authUri set, we use discovery
                     $discovery = new Discovery($this->client);
                     $discoveryResponse = $discovery->discover($me);
                     if (null !== $discoveryResponse->getAuthorizationEndpoint()) {
-                        // FIXME: validate authorization_endpoint?
+                        // XXX: validate authorization_endpoint
                         $this->authUri = $discoveryResponse->getAuthorizationEndpoint();
                     }
                 }
 
                 $clientId = $request->getUrl()->getRootUrl();
                 $stateValue = $this->io->getRandom();
-                $redirectUri = $request->getUrl()->getRootUrl().'_indieauth/callback';
+                $redirectUri = $request->getUrl()->getRootUrl().'_auth/indieauth/callback';
                 $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getPostParameter('redirect_to'));
 
                 $authSession = array(
@@ -171,10 +122,10 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                     'redirect_uri' => $redirectUri,
                     'redirect_to' => $redirectTo,
                 );
-                $this->session->set('auth', $authSession);
+                $this->session->set('_auth_indieauth_session', $authSession);
 
                 $authUriParams = array(
-                    # FIXME: add also user_hint or similar OpenID Connect parameter
+                    # XXX: add also user_hint or similar OpenID Connect parameter
                     'client_id' => $clientId,
                     'response_type' => 'code',
                     'me' => $me,
@@ -191,15 +142,16 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                 return new RedirectResponse($fullAuthUri, 302);
             },
             array(
-                __CLASS__ => array('enabled' => false),
-                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array('enabled' => false),
+                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array(
+                    'enabled' => false,
+                ),
             )
         );
 
         $service->get(
-            '/_indieauth/callback',
+            '/_auth/indieauth/callback',
             function (Request $request) {
-                $authSession = $this->session->get('auth');
+                $authSession = $this->session->get('_auth_indieauth_session');
 
                 if (!is_array($authSession)) {
                     throw new BadRequestException('no session available');
@@ -247,19 +199,20 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                     );
                 }
 
-                $this->session->set('me', $responseData['me']);
-                $this->session->delete('auth');
+                $this->session->set('_auth_indieauth_me', $responseData['me']);
+                $this->session->delete('_auth_indieauth_session');
 
                 return new RedirectResponse($authSession['redirect_to'], 302);
             },
             array(
-                __CLASS__ => array('enabled' => false),
-                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array('enabled' => false),
+                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array(
+                    'enabled' => false,
+                ),
             )
         );
 
         $service->post(
-            '/_indieauth/logout',
+            '/_auth/indieauth/logout',
             function (Request $request) {
                 $this->session->destroy();
                 $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $request->getUrl()->getQueryParameter('redirect_to'));
@@ -267,58 +220,28 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
                 return new RedirectResponse($redirectTo, 302);
             },
             array(
-                __CLASS__ => array('enabled' => false),
-                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array('enabled' => false),
+                'fkooman\Rest\Plugin\Authentication\AuthenticationPlugin' => array(
+                    'enabled' => false,
+                ),
             )
         );
     }
 
-    public function execute(Request $request, array $routeConfig)
+    public function requestAuthentication(Request $request)
     {
-        $userId = $this->session->get('me');
-
-        if (null !== $userId) {
-            return new IndieInfo($userId);
-        }
-
-        // check if authentication is required...
-        if (array_key_exists('require', $routeConfig)) {
-            if (!$routeConfig['require']) {
-                return;
-            }
-        }
-
-        if (null !== $this->unauthorizedRedirectUri) {
-            // we have the ability to redirect the user to a login page, do 
-            // that! 
-            $redirectTo = InputValidation::validateRedirectTo($request->getUrl()->getRootUrl(), $this->unauthorizedRedirectUri);
-
-            $querySeparator = false === strpos($redirectTo, '?') ? '?' : '&';
-
-            // add the "me" parameter to the redirectTo URL if it is set
-            $me = $request->getUrl()->getQueryParameter('me');
-            if (null !== $me) {
-                $redirectTo = sprintf('%s%sme=%s', $redirectTo, $querySeparator, $me);
-                $querySeparator = '&';
-            }
-
-            return new RedirectResponse(
-                sprintf(
-                    '%s%sredirect_to=%s',
-                    $redirectTo,
-                    $querySeparator,
-                    urlencode($request->getUrl()->toString())
-                ),
-                302
-            );
-        }
-
-        $e = new UnauthorizedException(
-            'no_credentials',
-            'no authenticated session'
+        $response = new Response(200);
+        $response->setHeader('X-Frame-Options', 'DENY');
+        $response->setHeader('Content-Security-Policy', "default-src 'self'");
+        $response->setBody(
+            $this->templateManager->render(
+                'indieAuthAuth',
+                array(
+                    'login_hint' => $request->getUrl()->getQueryParameter('login_hint'),
+                )
+            )
         );
-        $e->addScheme('IndieAuth', $this->authParams);
-        throw $e;
+
+        return $response;
     }
 
     private function decodeResponse(ResponseInterface $response)
@@ -337,6 +260,6 @@ class IndieAuthAuthentication implements AuthenticationPluginInterface
             return $verifyData;
         }
 
-        throw new RuntimeException('invalid content type from verify endpoint');
+        throw new RuntimeException('unexpected content type from verify endpoint');
     }
 }
