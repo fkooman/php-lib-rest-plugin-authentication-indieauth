@@ -20,11 +20,12 @@
         "ext-libxml": "*",
         "ext-pcre": "*",
         "ext-spl": "*",
+        "fkooman/http": "^1.0.0",
         "fkooman/io": "^1.0.0",
+        "fkooman/json": "^1.0.0",
         "fkooman/rest": "^1.0.1",
         "fkooman/rest-plugin-authentication": "^2.0.0",
-        "guzzlehttp/guzzle": "~5.3",
-	"fkooman/tpl": "^2.0.0",
-        "php": ">=5.3.0"
+        "fkooman/tpl": "^2.0.0",
+        "guzzlehttp/guzzle": "~5.3"
     }
 }

@@ -1,6 +1,6 @@
 # Release History
 
-## 2.0.0 (...)
+## 2.0.0 (2016-01-22)
 - update API to new `fkooman/rest-plugin-authentication`
 - lots of code cleanup
 
