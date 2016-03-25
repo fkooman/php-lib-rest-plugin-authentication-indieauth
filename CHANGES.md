@@ -1,5 +1,9 @@
 # Release History
 
+## 2.0.1 (2016-03-25)
+- update `fkooman/json` and move to development dependencies
+- fix TestTemplateManager API compatilibty
+
 ## 2.0.0 (2016-01-22)
 - update API to new `fkooman/rest-plugin-authentication`
 - lots of code cleanup

@@ -22,6 +22,10 @@ use fkooman\Json\Json;
 
 class TestTemplateManager implements TemplateManagerInterface
 {
+    public function addDefault(array $templateVariables)
+    {
+    }
+
     public function setDefault(array $templateVariables)
     {
     }
