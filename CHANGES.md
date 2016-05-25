@@ -1,5 +1,8 @@
 # Release History
 
+## 2.0.2 (2016-05-25)
+- update `fkooman/io`
+
 ## 2.0.1 (2016-03-25)
 - update `fkooman/json` and move to development dependencies
 - fix TestTemplateManager API compatilibty
