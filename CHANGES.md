@@ -1,5 +1,8 @@
 # Release History
 
+## 3.0.0 (2016-08-19)
+- update `fkooman/rest` and `fkooman/http` dependencies
+
 ## 2.0.2 (2016-05-25)
 - update `fkooman/io`
 

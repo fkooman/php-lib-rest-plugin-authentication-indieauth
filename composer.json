@@ -20,12 +20,13 @@
         "ext-libxml": "*",
         "ext-pcre": "*",
         "ext-spl": "*",
-        "fkooman/http": "^1.0.0",
+        "fkooman/http": "^2.0",
         "fkooman/io": "^2.0.0",
-        "fkooman/rest": "^1.0.1",
-        "fkooman/rest-plugin-authentication": "^2.0.0",
+        "fkooman/rest": "^2.0",
+        "fkooman/rest-plugin-authentication": "^3.0.0",
         "fkooman/tpl": "^2.0.0",
-        "guzzlehttp/guzzle": "~5.3"
+        "guzzlehttp/guzzle": "~5.3",
+        "php": ">= 5.4"
     },
     "require-dev": {
         "fkooman/json": "^2.0.0"
